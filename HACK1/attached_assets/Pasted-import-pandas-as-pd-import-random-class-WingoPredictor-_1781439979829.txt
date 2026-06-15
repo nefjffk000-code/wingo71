@@ -1,0 +1,65 @@
+import pandas as pd
+import random
+
+class WingoPredictor:
+    def __init__(self, history_file):
+        # Load dataset (convert PDF → CSV before use)
+        self.data = pd.read_csv(history_file)
+        self.data['RESULT'] = self.data['RESULT'].str.upper()
+        self.stats = self._build_stats()
+
+    def _build_stats(self):
+        stats = {}
+        streak = 1
+        prev = None
+        for result in self.data['RESULT']:
+            if result == prev:
+                streak += 1
+            else:
+                streak = 1
+            prev = result
+            key = f"{streak}_{result}"
+            if key not in stats:
+                stats[key] = {"continue": 0, "reverse": 0}
+            idx = self.data[self.data['RESULT'] == result].index
+            for i in idx:
+                if i + 1 < len(self.data):
+                    nxt = self.data.iloc[i + 1]['RESULT']
+                    if nxt == result:
+                        stats[key]["continue"] += 1
+                    else:
+                        stats[key]["reverse"] += 1
+        return stats
+
+    def predict_color(self, streak_len, current_result):
+        key = f"{streak_len}_{current_result}"
+        if key not in self.stats:
+            return current_result
+        cont = self.stats[key]["continue"]
+        rev = self.stats[key]["reverse"]
+        total = cont + rev
+        if total == 0:
+            return current_result
+
+        # Weighted probabilities
+        p_continue = (cont / total) * 0.9
+        p_reverse = (rev / total) * 1.1
+        adjustment = random.uniform(-0.02, 0.02)
+
+        if p_continue + adjustment >= p_reverse:
+            return current_result
+        else:
+            return "BIG" if current_result == "SMALL" else "SMALL"
+
+    def predict_number(self):
+        # Frequency-based number prediction
+        freq = self.data['NUMBER'].value_counts()
+        # Pick the most frequent number with slight randomness
+        top_numbers = freq.index[:3]  # top 3 frequent numbers
+        return random.choice(top_numbers)
+
+# Example usage:
+# predictor = WingoPredictor("wingo_history.csv")
+# color = predictor.predict_color(streak_len=3, current_result="BIG")
+# number = predictor.predict_number()
+# print(f"Prediction: {color}, Number: {number}")
