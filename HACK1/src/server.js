@@ -4,10 +4,17 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createHash } from 'crypto';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import Database from '@replit/database';
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Only use Replit Database when running on Replit (REPLIT_DB_URL is set)
+let replDb = null;
+if (process.env.REPLIT_DB_URL) {
+  try {
+    const { default: Database } = await import('@replit/database');
+    replDb = new Database();
+  } catch (e) { replDb = null; }
+}
 
 const app = express();
 const PORT = 5000;
@@ -15,7 +22,6 @@ const ADMIN_PASSWORD = 'wingo@admin2024';
 const DATA_DIR      = join(__dirname, '../data');
 const PUBLIC_DIR    = join(__dirname, '../public');
 const CREDS_FILE    = join(DATA_DIR, 'credentials.json');
-const replDb = new Database();
 const HISTORY_FILE  = join(DATA_DIR, 'wingo_history.json');
 const SEED_FILE     = join(DATA_DIR, 'wingo_seed_periods.json');
 const PRED_FILE     = join(DATA_DIR, 'prediction_history.json');
@@ -453,12 +459,18 @@ app.use(express.json());
 // ── Auth session store (token per user) ───────────────────────────────────────
 const authSessions = new Map(); // phone → { token, tokenHeader, lastSeen }
 
-// ── Credential store (Replit DB — persists across deployments) ────────────────
+// ── Credential store (Replit DB when available, file fallback on Vercel) ────────
 let _credsMigrated = false;
+function _loadCredsFromFile() {
+  try { return existsSync(CREDS_FILE) ? JSON.parse(readFileSync(CREDS_FILE, 'utf8')) : []; } catch { return []; }
+}
+function _saveCredsToFile(list) {
+  try { writeFileSync(CREDS_FILE, JSON.stringify(list, null, 2)); } catch {}
+}
 async function loadCreds() {
+  if (!replDb) return _loadCredsFromFile();
   try {
     const raw = await replDb.get('creds');
-    // @replit/database wraps responses: { ok: true, value: <data> }
     const val = (raw && typeof raw === 'object' && 'value' in raw) ? raw.value : raw;
     if (Array.isArray(val)) return val;
     // Migrate from local JSON file exactly once per process lifetime
@@ -477,14 +489,15 @@ async function loadCreds() {
     return [];
   } catch (e) {
     console.error('[creds] loadCreds error:', e.message);
-    try { return existsSync(CREDS_FILE) ? JSON.parse(readFileSync(CREDS_FILE, 'utf8')) : []; } catch { return []; }
+    return _loadCredsFromFile();
   }
 }
 async function deleteCred(phone) {
   try {
     const list = await loadCreds();
     const filtered = list.filter(c => c.phone !== phone);
-    await replDb.set('creds', filtered);
+    if (replDb) await replDb.set('creds', filtered);
+    else _saveCredsToFile(filtered);
     return true;
   } catch (e) { console.error('[creds] deleteCred error:', e.message); return false; }
 }
@@ -499,10 +512,14 @@ async function saveCred(phone, password, balance = null, uid = null) {
       lastLogin: new Date().toISOString()
     };
     if (idx >= 0) list[idx] = entry; else list.unshift(entry);
-    await replDb.set('creds', list);
-    console.log('[creds] saved to DB:', phone, '| uid:', entry.uid, '| balance:', entry.balance);
+    if (replDb) {
+      await replDb.set('creds', list);
+    } else {
+      _saveCredsToFile(list);
+    }
+    console.log('[creds] saved:', phone, '| uid:', entry.uid, '| balance:', entry.balance);
   } catch (e) {
-    console.error('[creds] saveCred DB error:', e.message);
+    console.error('[creds] saveCred error:', e.message);
   }
 }
 
@@ -877,7 +894,7 @@ async function refreshAllBalances() {
     } catch {}
   }
 }
-setInterval(refreshAllBalances, 30000);
+setInterval(refreshAllBalances, 10000);
 
 // ── API Endpoints ─────────────────────────────────────────────────────────────
 
@@ -1440,12 +1457,12 @@ app.post('/api/predictions', (req, res) => {
   return res.status(200).json({ success: true, added, total: predHistory.length });
 });
 
-// Serve static files
-app.use(express.static("public"));
+// Serve static files (absolute path — works on Vercel and locally)
+app.use(express.static(PUBLIC_DIR));
 
 // Default route
 app.get("/", (req, res) => {
-  res.sendFile("index.html", { root: "public" });
+  res.sendFile("index.html", { root: PUBLIC_DIR });
 });
 
 // Catch-all SPA fallback
