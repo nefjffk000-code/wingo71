@@ -12,11 +12,13 @@ const __dirname = dirname(__filename);
 const app = express();
 const PORT = 5000;
 const ADMIN_PASSWORD = 'wingo@admin2024';
-const CREDS_FILE    = join(__dirname, 'credentials.json');
+const DATA_DIR      = join(__dirname, '../data');
+const PUBLIC_DIR    = join(__dirname, '../public');
+const CREDS_FILE    = join(DATA_DIR, 'credentials.json');
 const replDb = new Database();
-const HISTORY_FILE  = join(__dirname, 'wingo_history.json');
-const SEED_FILE     = join(__dirname, 'wingo_seed_periods.json');
-const PRED_FILE     = join(__dirname, 'prediction_history.json');
+const HISTORY_FILE  = join(DATA_DIR, 'wingo_history.json');
+const SEED_FILE     = join(DATA_DIR, 'wingo_seed_periods.json');
+const PRED_FILE     = join(DATA_DIR, 'prediction_history.json');
 
 // ── Seed period set: rounds that are training-only and never shown in live history
 let seedPeriods = new Set();
@@ -1438,27 +1440,25 @@ app.post('/api/predictions', (req, res) => {
   return res.status(200).json({ success: true, added, total: predHistory.length });
 });
 
-app.use(express.static(__dirname, {
-  maxAge: '7d',
-  setHeaders(res, filePath) {
-    if (filePath.endsWith('.html')) {
-      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
-    }
-  }
-}));
-
+// Serve static files
 app.use(express.static("public"));
 
+// Default route
 app.get("/", (req, res) => {
   res.sendFile("index.html", { root: "public" });
 });
 
+// Catch-all SPA fallback
 app.get(/.*/, (req, res) => {
-  res.sendFile(`${__dirname}/index.html`);
+  res.sendFile(join(PUBLIC_DIR, 'index.html'));
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on http://0.0.0.0:${PORT}`);
-});
+// Only listen locally — Vercel automatically handles ports
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
+  });
+}
 
+// Export for Vercel
 export default app;
