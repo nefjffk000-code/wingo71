@@ -1,0 +1,90 @@
+import pandas as pd
+import random
+
+class WingoPredictor:
+    def __init__(self, history_file):
+        self.data = pd.read_csv(history_file)
+        self.data['RESULT'] = self.data['RESULT'].str.upper()
+        self.stats = self._build_stats()
+        self.last_prediction = None  # track last color-number pair
+
+    def _build_stats(self):
+        stats = {}
+        streak = 1
+        prev = None
+        for result in self.data['RESULT']:
+            if result == prev:
+                streak += 1
+            else:
+                streak = 1
+            prev = result
+            key = f"{streak}_{result}"
+            if key not in stats:
+                stats[key] = {"continue": 0, "reverse": 0}
+            idx = self.data[self.data['RESULT'] == result].index
+            for i in idx:
+                if i + 1 < len(self.data):
+                    nxt = self.data.iloc[i + 1]['RESULT']
+                    if nxt == result:
+                        stats[key]["continue"] += 1
+                    else:
+                        stats[key]["reverse"] += 1
+        return stats
+
+    def predict_color(self, streak_len, current_result):
+        key = f"{streak_len}_{current_result}"
+        if key not in self.stats:
+            return current_result
+        cont = self.stats[key]["continue"]
+        rev = self.stats[key]["reverse"]
+        total = cont + rev
+        if total == 0:
+            return current_result
+
+        p_continue = (cont / total) * 0.9
+        p_reverse = (rev / total) * 1.1
+        adjustment = random.uniform(-0.02, 0.02)
+
+        if p_continue + adjustment >= p_reverse:
+            return current_result
+        else:
+            return "BIG" if current_result == "SMALL" else "SMALL"
+
+    def predict_number(self, color):
+        recent = self.data['NUMBER'].tail(100)
+        all_numbers = list(range(0,10))
+        missing = [n for n in all_numbers if n not in recent.values]
+
+        # Cluster logic
+        small_cluster = [n for n in range(0,5)]
+        big_cluster = [n for n in range(5,10)]
+
+        # Avoid repetition: if last prediction repeats, force variation
+        if self.last_prediction:
+            last_color, last_num = self.last_prediction
+        else:
+            last_color, last_num = None, None
+
+        if missing:
+            number = random.choice(missing)
+        else:
+            if color == "BIG":
+                number = random.choice(big_cluster)
+            else:
+                number = random.choice(small_cluster)
+
+        # Anti‑stuck rule: if same color‑number repeats, flip number cluster
+        if last_color == color and last_num == number:
+            if color == "BIG":
+                number = random.choice(small_cluster)
+            else:
+                number = random.choice(big_cluster)
+
+        self.last_prediction = (color, number)
+        return number
+
+# Example usage:
+# predictor = WingoPredictor("wingo_history.csv")
+# color = predictor.predict_color(streak_len=3, current_result="BIG")
+# number = predictor.predict_number(color)
+# print(f"Prediction: {color}, Number: {number}")

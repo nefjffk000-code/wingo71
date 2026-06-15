@@ -1,0 +1,3035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>WINGO · PRECISE PATTERN AI + HISTORY</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#ff3366">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WINGO AI">
+  <link rel="apple-touch-icon" href="/favicon.png">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+    }
+
+    body {
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      background: radial-gradient(circle at 20% 30%, #0a0c18, #03050a);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    /* Fullscreen game iframe */
+    .game-iframe {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+      z-index: 1;
+      opacity: 0.94;
+      pointer-events: auto;
+    }
+
+    /* ----- MODERN WIDGET ----- */
+    .widget {
+      position: fixed;
+      z-index: 10000;
+      top: clamp(6px,1.5vw,10px);
+      right: clamp(6px,1.5vw,10px);
+      width: min(340px, calc(100vw - 12px));
+      max-height: calc(100dvh - 16px);
+      display: flex;
+      flex-direction: column;
+      background: rgba(14, 12, 26, 0.92);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-radius: clamp(14px,3vw,22px);
+      border: 1.5px solid rgba(200, 130, 50, 0.7);
+      transition: border 0.3s ease;
+      overflow: hidden;
+      will-change: transform;
+    }
+
+    /* Header – elegant gradient */
+    .widget-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(10px,2vw,14px) clamp(12px,3vw,18px);
+      background: linear-gradient(135deg, rgb(32, 20, 8), rgb(22, 16, 6));
+      border-bottom: 1.5px solid rgba(200, 130, 50, 0.4);
+      cursor: grab;
+      position: relative;
+      z-index: 10;
+      flex-shrink: 0;
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .widget-header:active { cursor: grabbing; }
+    #content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    #content::-webkit-scrollbar { display: none; }
+
+    .widget-header h3 {
+      font-size: clamp(0.68rem,3vw,0.88rem);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      background: linear-gradient(135deg, #ffe8b0, #ffa040);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .widget-header button {
+      background: rgba(10, 8, 20, 0.85);
+      border: 1.5px solid rgba(180, 110, 30, 0.5);
+      color: #ffe0c0;
+      font-size: 18px;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: 0.2s;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .widget-header button:hover {
+      background: rgba(30, 20, 5, 0.95);
+      border-color: rgba(255, 160, 50, 0.8);
+      color: #ffcc70;
+      transform: scale(1.05);
+    }
+
+    .widget-body {
+      padding: clamp(10px,2.5vw,18px);
+      overflow: visible;
+    }
+
+    /* Login panel */
+    .login-area {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .login-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .login-field label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #e8b060;
+      letter-spacing: 0.3px;
+      padding-left: 4px;
+    }
+    .phone-prefix {
+      background: rgba(255,255,255,0.07);
+      border: 1.5px solid rgba(200,150,60,0.35);
+      border-right: none;
+      border-radius: 10px 0 0 10px;
+      padding: 0 10px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      color: rgba(200,180,130,0.55);
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      user-select: none;
+    }
+    .input-wrap.has-prefix input {
+      border-radius: 0 10px 10px 0 !important;
+      border-left: none !important;
+    }
+    .login-field .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .login-area input {
+      width: 100%;
+      padding: 13px 16px;
+      background: rgba(8, 8, 20, 0.85);
+      border: 1.5px solid rgba(160, 100, 30, 0.45);
+      border-radius: 60px;
+      color: #f0e0c8;
+      text-align: left;
+      font-size: 14px;
+      font-weight: 400;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+      box-sizing: border-box;
+    }
+    .login-area input::placeholder {
+      color: rgba(200, 170, 120, 0.45);
+    }
+    .login-area input:focus {
+      outline: none;
+      border-color: rgba(220, 140, 50, 0.75);
+      box-shadow: 0 0 8px rgba(220, 130, 40, 0.15);
+    }
+    .login-area input[type="password"],
+    .login-area input.pw-input {
+      padding-right: 46px;
+    }
+    .eye-toggle {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #c89050;
+      font-size: 17px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      transition: color 0.2s;
+    }
+    .eye-toggle:hover { color: #ffbb60; }
+    .login-area .unlock-btn {
+      background: linear-gradient(95deg, #e83030, #f07020, #f5a020);
+      border: none;
+      border-radius: 60px;
+      padding: 15px;
+      font-weight: 800;
+      font-size: 15px;
+      color: white;
+      cursor: pointer;
+      letter-spacing: 1px;
+      box-shadow: 0 6px 20px rgba(220, 60, 20, 0.35);
+      transition: 0.2s;
+      margin-top: 4px;
+    }
+    .login-area .unlock-btn:hover {
+      transform: scale(0.98);
+      box-shadow: 0 4px 14px rgba(220, 60, 20, 0.5);
+    }
+    .login-area .auth-note {
+      font-size: 10px;
+      font-weight: 700;
+      color: rgba(180, 140, 80, 0.6);
+      text-align: center;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      padding-top: 2px;
+    }
+
+    /* Tabs – modern pill style */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 12px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      border-radius: 80px;
+      backdrop-filter: blur(4px);
+    }
+    .tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      padding: 7px 0;
+      border-radius: 60px;
+      font-size: clamp(9px,3vw,11px);
+      font-weight: 700;
+      color: #ccd6ff;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .tab.active {
+      background: linear-gradient(95deg, #ff3366, #ff884d);
+      color: white;
+      box-shadow: 0 4px 12px rgba(255, 51, 102, 0.4);
+    }
+
+    /* Cards & panels */
+    .panel {
+      display: none;
+      animation: fadeUp 0.25s ease;
+    }
+    .panel.active { display: block; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Info card (period & timer) */
+    .info-card {
+      background: rgba(8, 12, 22, 0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 80px;
+      padding: clamp(7px,1.8vw,10px) clamp(10px,3vw,16px);
+      margin-bottom: clamp(8px,2vw,14px);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      border: 1px solid rgba(255, 180, 100, 0.5);
+    }
+    .future-period-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .future-period-label {
+      font-size: 8px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: rgba(255,200,140,0.5);
+      text-transform: uppercase;
+    }
+    .future-period {
+      font-family: 'Fira Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #ffddb0;
+      letter-spacing: 0.5px;
+      word-break: break-all;
+    }
+    .timer-value {
+      font-family: 'Fira Mono', monospace;
+      font-size: clamp(18px,5vw,26px);
+      font-weight: 800;
+      background: linear-gradient(135deg, #ffe6c0, #ffaa66);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+
+    /* Prediction area – glassy and vibrant */
+    .prediction-area {
+      text-align: center;
+      background: rgba(5, 8, 18, 0.7);
+      backdrop-filter: blur(16px);
+      border-radius: clamp(16px,4vw,32px);
+      padding: clamp(10px,2.5vw,18px) clamp(8px,2vw,14px);
+      margin: clamp(8px,2vw,14px) 0;
+      border: 1px solid rgba(255, 200, 130, 0.5);
+    }
+    .prediction-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .prediction-dot {
+      width: clamp(18px,4.5vw,28px);
+      height: clamp(18px,4.5vw,28px);
+      border-radius: 50%;
+    }
+    .green-dot { background: #22c55e; box-shadow: 0 0 2px #22c55e; }
+    .red-dot { background: #ef4444; box-shadow: 0 0 2px #ef4444; }
+    .purple-dot { background: #c084fc; box-shadow: 0 0 2px #c084fc; }
+
+    .dual-dot-container { display: flex; gap: 4px; }
+    .dual-dot { width: clamp(18px,4.5vw,28px); height: clamp(18px,4.5vw,28px); border-radius: 50%; }
+
+    .prediction-big-small {
+      font-size: clamp(20px,6vw,36px);
+      font-weight: 900;
+      letter-spacing: 1px;
+    }
+    .big-result { color: #ffcc44; text-shadow: 0 0 2px #ffaa33; }
+    .small-result { color: #44ffff; text-shadow: 0 0 2px #22ddff; }
+
+    .prediction-number {
+      font-size: clamp(20px,6vw,36px);
+      font-weight: 800;
+      font-family: monospace;
+    }
+    .num-green { color: #86efac; }
+    .num-red { color: #f87171; }
+    .num-purple { color: #d8b4fe; }
+
+    /* Stats bar */
+    .stats-bar {
+      display: flex;
+      justify-content: space-around;
+      background: rgba(8, 12, 22, 0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 60px;
+      padding: 8px 10px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #eef3ff;
+      margin-top: 6px;
+    }
+    .stats-bar b {
+      color: #ffcc77;
+      font-size: 13px;
+      margin-left: 4px;
+    }
+
+    /* Tables – clean, no scrollbars */
+    .live-table-wrap, .history-table-wrap {
+      max-height: 240px;
+      overflow-y: auto;
+      border-radius: 18px;
+      background: rgba(8, 11, 20, 0.6);
+      backdrop-filter: blur(8px);
+      margin-top: 4px;
+      border: 1px solid rgba(255, 180, 120, 0.3);
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .live-table-wrap::-webkit-scrollbar,
+    .history-table-wrap::-webkit-scrollbar {
+      display: none;
+    }
+    .live-table, .history-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+    /* Live: PERIOD | NUMBER | RESULT | PATTERN */
+    .live-table th:nth-child(1), .live-table td:nth-child(1) { width:46%; text-align:left; padding-left:10px; }
+    .live-table th:nth-child(2), .live-table td:nth-child(2) { width:14%; text-align:center; }
+    .live-table th:nth-child(3), .live-table td:nth-child(3) { width:22%; text-align:center; }
+    .live-table th:nth-child(4), .live-table td:nth-child(4) { width:18%; text-align:center; }
+    /* History: PERIOD | PREDICTED | NUMBER | MATCH */
+    .history-table th:nth-child(1), .history-table td:nth-child(1) { width:46%; text-align:left; padding-left:10px; }
+    .history-table th:nth-child(2), .history-table td:nth-child(2) { width:22%; text-align:center; }
+    .history-table th:nth-child(3), .history-table td:nth-child(3) { width:16%; text-align:center; }
+    .history-table th:nth-child(4), .history-table td:nth-child(4) { width:16%; text-align:center; }
+    .live-table th, .history-table th {
+      padding: 8px 6px;
+      color: #ffbc6e;
+      background: rgb(8, 11, 20);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .live-table td, .history-table td {
+      padding: 7px 6px;
+      border-bottom: 1px solid rgba(255,200,150,0.12);
+      color: #f0f3fc;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+    .dot-wrapper { display: inline-flex; gap: 6px; align-items: center; }
+    .dot { width: 12px; height: 12px; border-radius: 12px; }
+
+    .info-note {
+      font-size: 11px;
+      color: #cdd9ff;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 8px 16px;
+      border-radius: 40px;
+      margin: 12px 8px;
+      text-align: center;
+    }
+  
+    /* ── RESPONSIVE: mobile phones (< 480px) ── */
+    @media (max-width: 480px) {
+      .widget {
+        top: 6px;
+        right: 6px;
+        width: min(270px, calc(100vw - 16px));
+        max-height: 62dvh;
+        border-radius: 14px;
+      }
+      .widget-header {
+        padding: 7px 11px;
+      }
+      .widget-header h3 {
+        font-size: 0.72rem;
+      }
+      .widget-header h3 img {
+        height: 1.7em !important;
+        margin-right: 5px !important;
+      }
+      .widget-header button {
+        width: 24px;
+        height: 24px;
+        font-size: 15px;
+      }
+      .widget-body { padding: 8px 9px; }
+      .login-area { gap: 8px; }
+      .login-field { gap: 4px; }
+      .login-field label { font-size: 10px; }
+      .login-area input { padding: 9px 12px; font-size: 12px; }
+      .login-area input[type="password"], .login-area input.pw-input { padding-right: 38px; }
+      .phone-prefix { height: 35px; padding: 0 8px; font-size: 12px; }
+      .eye-toggle { font-size: 14px; right: 10px; }
+      .login-area .unlock-btn { padding: 11px; font-size: 13px; margin-top: 2px; }
+      .login-area .auth-note { font-size: 9px; letter-spacing: 1.5px; }
+      .tabs { gap: 3px; padding: 3px; margin-bottom: 8px; }
+      .tab { padding: 5px 0; font-size: 9px; }
+      .info-card { padding: 5px 10px; margin-bottom: 7px; }
+      .future-period { font-size: 11px; }
+      .timer-value { font-size: 18px; }
+      .prediction-area { padding: 8px 7px; margin: 7px 0; }
+      .prediction-big-small { font-size: 22px; }
+      .prediction-number { font-size: 22px; }
+      .prediction-dot, .dual-dot { width: 16px !important; height: 16px !important; }
+      .prediction-row { gap: 7px; }
+      .stats-bar { font-size: 10px; padding: 6px 8px; }
+      .stats-bar b { font-size: 11px; }
+      .live-table-wrap, .history-table-wrap { max-height: 160px; }
+      .live-table, .history-table { font-size: 10px; }
+      .live-table th, .history-table th { padding: 6px 4px; }
+      .live-table td, .history-table td { padding: 5px 4px; }
+      .dot { width: 9px; height: 9px; }
+      .info-note { font-size: 10px; padding: 6px 10px; margin: 7px 4px; }
+    }
+    /* ── RESPONSIVE: very small phones (< 360px) ── */
+    @media (max-width: 360px) {
+      .widget { top: 3px; right: 3px; width: calc(100vw - 14px); }
+      .tabs { gap: 2px; padding: 2px; }
+      .tab { padding: 5px 0; font-size: 8px; }
+      .prediction-row { gap: 5px; }
+      .widget-body { padding: 7px; }
+    }
+    /* ── RESPONSIVE: landscape phones ── */
+    @media (max-height: 500px) {
+      .widget { max-height: calc(100dvh - 8px); top: 4px; }
+      .prediction-area { padding: 7px 8px; margin: 5px 0; }
+      .info-card { margin-bottom: 6px; padding: 5px 10px; }
+      .live-table-wrap, .history-table-wrap { max-height: 160px; }
+    }
+    /* ── RESPONSIVE: tablets & desktops ── */
+    @media (min-width: 768px) {
+      .widget { top: 14px; right: 14px; width: min(340px, calc(100vw - 28px)); }
+    }
+    /* ── RESPONSIVE: large screens (1440px+) ── */
+    @media (min-width: 1440px) {
+      .widget { top: 20px; right: 20px; width: 340px; }
+    }
+
+  </style>
+</head>
+<body>
+
+<div id="splashScreen" style="
+  position:fixed;inset:0;z-index:99999;
+  background:radial-gradient(ellipse at 50% 40%, #1a0e04 0%, #0a0814 60%, #03050a 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;
+  transition:opacity 0.6s ease;
+">
+  <div id="splashRing" style="
+    position:relative;width:180px;height:180px;display:flex;align-items:center;justify-content:center;
+    margin-bottom:28px;
+  ">
+    <div style="
+      position:absolute;inset:0;border-radius:50%;
+      border:2.5px solid transparent;
+      background:linear-gradient(135deg,#ffd060,#ff8020,#ffd060) border-box;
+      -webkit-mask:linear-gradient(#fff 0 0) padding-box,linear-gradient(#fff 0 0);
+      -webkit-mask-composite:destination-out;mask-composite:exclude;
+      animation:spinRing 2.4s linear infinite;
+    "></div>
+    <div style="
+      position:absolute;inset:8px;border-radius:50%;
+      background:radial-gradient(circle,#1e1208 60%,#110a04);
+      box-shadow:0 0 40px rgba(200,120,20,0.3),inset 0 0 20px rgba(0,0,0,0.5);
+    "></div>
+    <img src="data:image/png;base64,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" style="width:110px;height:110px;object-fit:contain;position:relative;z-index:1;filter:sepia(1) saturate(6) hue-rotate(5deg) brightness(1.2);animation:crownPulse 1.8s ease-in-out infinite;" alt="crown">
+  </div>
+  <div style="
+    font-family:'Inter',system-ui,sans-serif;font-size:22px;font-weight:900;
+    background:linear-gradient(135deg,#ffe8a0,#ffb040,#ffe8a0);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    letter-spacing:1.5px;margin-bottom:6px;animation:fadeInUp 0.6s ease 0.3s both;
+  ">WINGO · HGNICE</div>
+  <div style="
+    font-family:'Inter',system-ui,sans-serif;font-size:11px;font-weight:700;
+    color:rgba(200,160,80,0.55);letter-spacing:3px;text-transform:uppercase;
+    animation:fadeInUp 0.6s ease 0.5s both;
+  ">Precise Pattern AI</div>
+  <div id="splashDots" style="
+    display:flex;gap:8px;margin-top:36px;
+    animation:fadeInUp 0.6s ease 0.7s both;
+  ">
+    <span style="width:7px;height:7px;border-radius:50%;background:#c88030;animation:dotBounce 1s ease-in-out 0s infinite;display:block;"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#c88030;animation:dotBounce 1s ease-in-out 0.2s infinite;display:block;"></span>
+    <span style="width:7px;height:7px;border-radius:50%;background:#c88030;animation:dotBounce 1s ease-in-out 0.4s infinite;display:block;"></span>
+  </div>
+</div>
+<style>
+@keyframes spinRing { to { transform:rotate(360deg); } }
+@keyframes crownPulse {
+  0%,100% { transform:scale(1) translateY(0); filter:sepia(1) saturate(6) hue-rotate(5deg) brightness(1.2); }
+  50% { transform:scale(1.08) translateY(-5px); filter:sepia(1) saturate(8) hue-rotate(5deg) brightness(1.5) drop-shadow(0 0 14px #ffaa30); }
+}
+@keyframes fadeInUp {
+  from { opacity:0; transform:translateY(14px); }
+  to { opacity:1; transform:translateY(0); }
+}
+@keyframes dotBounce {
+  0%,100% { transform:translateY(0); opacity:0.4; }
+  50% { transform:translateY(-7px); opacity:1; }
+}
+</style>
+<script>
+function _dismissSplash() {
+  var s = document.getElementById('splashScreen');
+  if (s) { s.style.opacity = '0'; setTimeout(function(){ if(s.parentNode) s.remove(); }, 650); }
+}
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(_dismissSplash, 2200);
+});
+setTimeout(_dismissSplash, 5000);
+</script>
+
+<iframe class="game-iframe" id="gameIframe" src="https://hgnice.club/#/register?invitationCode=513331567606"></iframe>
+
+<div class="widget" id="widget">
+  <div class="widget-header" id="dragHandle">
+    <h3><img src="/crown.png" style="height:2.8em;vertical-align:middle;margin-right:8px;filter:sepia(1) saturate(6) hue-rotate(5deg) brightness(1.1);" alt="crown"> WINGO <span style="color:#ff6b35;font-size:0.75em;letter-spacing:0.05em;">HGNICE</span></h3>
+    <button id="minimizeBtn">−</button>
+  </div>
+  <div id="content">
+    <div class="widget-body" id="loginPanel">
+      <div class="login-area">
+        <div class="login-field">
+          <label for="loginUsername">Phone Number</label>
+          <div class="input-wrap has-prefix">
+            <span class="phone-prefix">+880</span>
+            <input type="tel" id="loginUsername" placeholder="Enter phone number" autocomplete="off">
+          </div>
+        </div>
+        <div class="login-field">
+          <label for="loginPassword">Password</label>
+          <div class="input-wrap">
+            <input type="password" id="loginPassword" class="pw-input" placeholder="Enter your password..." autocomplete="off">
+            <button class="eye-toggle" id="eyeToggle" type="button" tabindex="-1">👁</button>
+          </div>
+        </div>
+        <button class="unlock-btn" id="unlockBtn">🔒 UNLOCK</button>
+        <div class="auth-note">Authorized Access Only</div>
+      </div>
+    </div>
+    <div class="widget-body" id="mainPanel" style="display:none;">
+      <div class="tabs">
+        <button class="tab active" data-tab="predict">🔮 PREDICT</button>
+        <button class="tab" data-tab="live">📡 LIVE DATA</button>
+        <button class="tab" data-tab="history">📜 HISTORY</button>
+      </div>
+      <div class="panel active" id="predictTab">
+        <div class="info-card">
+          <div class="future-period-wrap">
+            <span class="future-period-label">Period</span>
+            <span class="future-period" id="futurePeriodDisplay">----</span>
+          </div>
+          <span class="timer-value" id="roundTimerDisplay">--s</span>
+        </div>
+        <div class="prediction-area" id="predictionArea">
+          <div class="prediction-row">---</div>
+        </div>
+        <div class="stats-bar">
+          <span>🔴 BIG: <b id="bigStat">0</b></span>
+          <span>🟢 SMALL: <b id="smallStat">0</b></span>
+          <span>📊 CONF: <b id="confStat">0%</b></span>
+        </div>
+      </div>
+      <div class="panel" id="liveTab">
+        <div style="display:flex; align-items:center; gap:5px; margin-bottom:6px;">
+          <div class="info-note" style="flex:1; margin:0; padding:5px 10px; font-size:10.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">🔗 LIVE &nbsp;|&nbsp; ROUNDS: <b id="liveTotalCount">0</b></div>
+          <button id="refreshAllBtn" title="Refresh all 500 rounds" style="flex-shrink:0; background:rgba(255,150,80,0.10); border:1px solid rgba(255,180,100,0.25); border-radius:40px; color:rgba(255,200,140,0.75); font-size:10px; font-weight:700; padding:5px 9px; cursor:pointer; transition:0.2s; letter-spacing:0.3px; white-space:nowrap;">↺ All</button>
+          <button id="exportPdfBtn" title="Download full history as PDF" style="flex-shrink:0; background:rgba(100,200,120,0.10); border:1px solid rgba(100,220,130,0.28); border-radius:40px; color:rgba(140,230,160,0.85); font-size:10px; font-weight:700; padding:5px 9px; cursor:pointer; transition:0.2s; letter-spacing:0.3px; white-space:nowrap;">📄 PDF</button>
+        </div>
+        <div class="live-table-wrap">
+          <table class="live-table">
+            <thead><tr><th>PERIOD</th><th>NUMBER</th><th>RESULT</th><th>PATTERN</th></thead>
+            <tbody id="liveTableBody"><tr><td colspan="4" style="text-align:center; padding:36px;">✨ Waiting for first sync...✨</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="panel" id="historyTab">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px;">
+          <!-- left: label + badges -->
+          <div class="info-note" id="historyStats" style="margin:0; padding:5px 10px; font-size:10.5px; display:flex; align-items:center; gap:5px; flex-shrink:1; min-width:0;">
+            <span style="display:inline-block; width:9px; height:9px; background:rgba(180,140,255,0.7); border-radius:2px; flex-shrink:0;"></span>
+            <span style="font-weight:700; letter-spacing:0.4px; flex-shrink:0;">HISTORY</span>
+            <span style="opacity:0.5; flex-shrink:0;">—</span>
+            <span id="historyWins" style="flex-shrink:0; background:rgba(50,200,100,0.18); border:1px solid rgba(50,220,110,0.35); border-radius:4px; padding:1px 7px; font-weight:700; color:#4ade80; white-space:nowrap; font-size:10px;">&#x2713; 0</span>
+            <span id="historyLosses" style="flex-shrink:0; background:rgba(220,60,60,0.15); border:1px solid rgba(240,80,80,0.32); border-radius:4px; padding:1px 7px; font-weight:700; color:#f87171; white-space:nowrap; font-size:10px;">&#x2717; 0</span>
+          </div>
+          <!-- right: action buttons -->
+          <div style="display:flex; align-items:center; gap:5px; flex-shrink:0;">
+            <button id="exportHistoryPdfBtn" title="Download prediction history as PDF" style="background:rgba(100,200,120,0.10); border:1px solid rgba(100,220,130,0.28); border-radius:40px; color:rgba(140,230,160,0.85); font-size:10px; font-weight:700; padding:5px 9px; cursor:pointer; transition:0.2s; letter-spacing:0.3px; white-space:nowrap;">&#x1F4C4; PDF</button>
+            <button id="resetHistoryBtn" title="Reset history" style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,180,120,0.18); border-radius:40px; color:rgba(255,200,160,0.55); font-size:10px; font-weight:600; padding:5px 9px; cursor:pointer; transition:0.2s; letter-spacing:0.3px; white-space:nowrap;">&#x21BA; Reset</button>
+          </div>
+        </div>
+        <div class="history-table-wrap">
+          <table class="history-table">
+            <thead><tr><th>PERIOD</th><th>PREDICTED</th><th>NUMBER</th><th>MATCH</th></tr></thead>
+            <tbody id="historyTableBody"><tr><td colspan="5" style="text-align:center; padding:36px;">No predictions yet</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // Safe DOM helpers — never throw on missing elements
+  function domSet(id, prop, val) { const e = document.getElementById(id); if (e) e[prop] = val; }
+  function domStyle(id, prop, val) { const e = document.getElementById(id); if (e) e.style[prop] = val; }
+
+
+  let liveHistory = [];
+  let predictionHistory = [];
+  let roundSyncActive = false;
+  let currentPrediction = null;
+  let currentPredictedNumber = null;
+  let currentTrendFamily = null;       // active PRNG trend family name from server
+  let animationFrame = null;
+  let lastPatternName = "pattern detection";
+  let lastConfidence = 0.7;
+  let lastTriggeredSecond = -1;
+  let pendingPredictionRegen = false;  // deferred prediction update — fires at timer=0
+  let lastTrendName = '';
+  let lastTrendDir = '';
+  let lastStreakLen = 0;
+  let lastAlert = '';
+  let lastMomentum = 'neutral';
+  let lastPatternType = '';
+  let prngCycleCache = { count: -1, result: null };
+  let predGeneratedAt = 0;   // timestamp when current prediction was last generated
+
+  // ── High-performance drag — RAF-batched, GPU-composited, iframe-safe ──────
+  const widget = document.getElementById('widget');
+  const dragHandle = document.getElementById('dragHandle');
+  const gameIframe = document.querySelector('.game-iframe');
+  let dragActive = false;
+  let startX = 0, startY = 0, baseX = 0, baseY = 0;
+  let pendingX = 0, pendingY = 0;
+  let rafId = null;
+
+  // Commit the position on the GPU-composited layer, once per frame
+  function commitPos() {
+    rafId = null;
+    widget.style.transform = `translate3d(${pendingX}px,${pendingY}px,0)`;
+  }
+
+  dragHandle.addEventListener('pointerdown', (e) => {
+    if (e.target.closest('button')) return;
+    dragActive = true;
+    startX = e.clientX - baseX;
+    startY = e.clientY - baseY;
+    dragHandle.setPointerCapture(e.pointerId);
+    widget.style.transition = 'none';
+    // Block the iframe from stealing pointer events during drag
+    if (gameIframe) gameIframe.style.pointerEvents = 'none';
+    e.preventDefault();
+  }, { passive: false });
+
+  dragHandle.addEventListener('pointermove', (e) => {
+    if (!dragActive) return;
+    pendingX = e.clientX - startX;
+    pendingY = e.clientY - startY;
+    // Schedule one DOM write per animation frame — zero-lag, no thrash
+    if (!rafId) rafId = requestAnimationFrame(commitPos);
+  }, { passive: true });
+
+  function endDrag() {
+    if (!dragActive) return;
+    dragActive = false;
+    baseX = pendingX;
+    baseY = pendingY;
+    if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
+    widget.style.transition = 'border 0.3s ease';
+    // Re-enable iframe interaction
+    if (gameIframe) gameIframe.style.pointerEvents = 'auto';
+  }
+
+  dragHandle.addEventListener('pointerup', endDrag);
+  dragHandle.addEventListener('pointercancel', endDrag);
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+
+  function getResultFromNumber(num) { return (num >= 5 && num <= 9) ? 'BIG' : 'SMALL'; }
+  function getDotHtml(num) {
+    const n = parseInt(num);
+    let dots = [];
+    if (n === 5) dots = ['green-dot', 'purple-dot'];
+    else if (n === 0) dots = ['red-dot', 'purple-dot'];
+    else if ([1,3,7,9].includes(n)) dots = ['green-dot'];
+    else if ([2,4,6,8].includes(n)) dots = ['red-dot'];
+    if (dots.length === 0) return '<span class="dot" style="background:#aaa;"></span>';
+    return `<div class="dot-wrapper">${dots.map(d => `<span class="dot ${d}"></span>`).join('')}</div>`;
+  }
+  function getNumberClass(num) {
+    const n = parseInt(num);
+    if ([1,3,7,9].includes(n)) return 'num-green';
+    if ([2,4,6,8].includes(n)) return 'num-red';
+    if (n === 5 || n === 0) return 'num-purple';
+    return '';
+  }
+  function getNumberDisplayData(num) {
+    if ([1,3,7,9].includes(num)) return { dotClass: "green-dot", dual: false, textClass: "num-green" };
+    if ([2,4,6,8].includes(num)) return { dotClass: "red-dot", dual: false, textClass: "num-red" };
+    if (num === 5) return { dotClass: "green-dot purple-dot", dual: true, textClass: "num-purple" };
+    if (num === 0) return { dotClass: "red-dot purple-dot", dual: true, textClass: "num-purple" };
+    return { dotClass: "", dual: false, textClass: "" };
+  }
+
+  function loadLiveHistory() {
+    const saved = localStorage.getItem('wingo_pattern_v5');
+    if (saved) try { liveHistory = JSON.parse(saved); } catch(e) { liveHistory = []; }
+    const savedPred = localStorage.getItem('wingo_pred_history_v5');
+    if (savedPred) try { predictionHistory = JSON.parse(savedPred); } catch(e) { predictionHistory = []; }
+    renderLiveTable();
+    renderHistoryTable();
+    updateHistoryStats();
+    if (liveHistory.length > 0) { generateStablePrediction(); updateUIWithCurrentPrediction(); }
+    else updateUIDefault();
+  }
+  // Debounced localStorage saves — batch rapid calls into one write per second
+  let _saveLiveTimer = null;
+  function saveLiveHistory() {
+    if (_saveLiveTimer) return;
+    _saveLiveTimer = setTimeout(() => {
+      _saveLiveTimer = null;
+      try { localStorage.setItem('wingo_pattern_v5', JSON.stringify(liveHistory.slice(0, 1000))); } catch(e) {}
+    }, 1000);
+  }
+  let _savePredTimer = null;
+  function savePredictionHistory() {
+    updateHistoryStats();
+    if (_savePredTimer) return;
+    _savePredTimer = setTimeout(() => {
+      _savePredTimer = null;
+      try { localStorage.setItem('wingo_pred_history_v5', JSON.stringify(predictionHistory.slice(0, 1000))); } catch(e) {}
+    }, 1000);
+  }
+
+  // ── Server-side prediction history sync ───────────────────────────────────
+  let _pendingServerSave = [];
+  let _serverSaveTimer   = null;
+  function flushPredictionsToServer() {
+    if (_serverSaveTimer || _pendingServerSave.length === 0) return;
+    _serverSaveTimer = setTimeout(async () => {
+      const toSend = _pendingServerSave.splice(0);
+      _serverSaveTimer = null;
+      try {
+        await fetch('/api/predictions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ entries: toSend })
+        });
+      } catch(e) {
+        // push back on failure so they retry next round
+        _pendingServerSave.unshift(...toSend);
+      }
+    }, 1500);
+  }
+
+  function addPredictionRecord(entry) {
+    if (predictionHistory.find(p => p.period === entry.period)) return;
+    predictionHistory.unshift(entry);
+    savePredictionHistory();
+    renderHistoryTable();
+    _pendingServerSave.push(entry);
+    flushPredictionsToServer();
+  }
+
+  async function loadPredHistoryFromServer() {
+    try {
+      const data = await fetch('/api/predictions').then(r => r.json());
+      if (!data.success || !Array.isArray(data.history)) return;
+      const existingSet = new Set(predictionHistory.map(p => p.period));
+      let added = 0;
+      for (const entry of data.history) {
+        if (entry.period && !existingSet.has(entry.period)) {
+          predictionHistory.push(entry);
+          existingSet.add(entry.period);
+          added++;
+        }
+      }
+      if (added > 0) {
+        predictionHistory.sort((a, b) => String(b.period).localeCompare(String(a.period)));
+        savePredictionHistory();
+        renderHistoryTable();
+        updateHistoryStats();
+      }
+    } catch(e) {}
+  }
+  function renderLiveTable() {
+    const tbody = document.getElementById('liveTableBody');
+    if (!liveHistory.length) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:36px;">✨ Waiting for first sync...✨</td></tr>';
+      domSet('liveTotalCount','innerText','0');
+      return;
+    }
+    let html = '';
+    liveHistory.forEach(row => {
+      const numVal = row.number;
+      const numberClass = getNumberClass(numVal);
+      const dotMarkup = getDotHtml(numVal);
+      const resultClass = (row.result === 'BIG') ? 'big-result' : 'small-result';
+      html += `<tr>
+        <td style="font-family:monospace; font-size:10px;" title="${row.period}">${row.period}</td>
+        <td class="${numberClass}"><strong>${numVal}</strong></td>
+        <td class="${resultClass}" style="font-weight:700;">${row.result}</td>
+        <td class="dot-cell">${dotMarkup}</td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+    domSet('liveTotalCount','innerText',liveHistory.length);
+  }
+  function renderHistoryTable() {
+    const tbody = document.getElementById('historyTableBody');
+    if (!predictionHistory.length) {
+      tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:40px 16px;">
+        <div style="font-size:28px;margin-bottom:10px;">⏳</div>
+        <div style="color:#ffcc77;font-weight:700;font-size:13px;letter-spacing:0.5px;margin-bottom:6px;">Waiting for prediction…</div>
+        <div style="color:rgba(255,255,255,0.35);font-size:11px;line-height:1.6;">Your results will appear here<br>after the next round completes.</div>
+      </td></tr>`;
+      return;
+    }
+    let html = '';
+    predictionHistory.slice(0, 50).forEach(p => {
+      const correctMark = p.correct ? '✅' : '❌';
+      html += `<tr>
+        <td style="font-family:monospace; font-size:10px;" title="${p.period}">${p.period}</td>
+        <td class="${p.predictedResult === 'BIG' ? 'big-result' : 'small-result'}">${p.predictedResult}</td>
+        <td class="${getNumberClass(p.predictedNumber)}"><strong>${p.predictedNumber}</strong></td>
+        <td class="match-cell">${correctMark}</td>
+      </tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+  function updateHistoryStats() {
+    const total = predictionHistory.length;
+    const correct = predictionHistory.filter(p => p.correct === true).length;
+    const losses = total - correct;
+    const wEl = document.getElementById('historyWins');
+    const lEl = document.getElementById('historyLosses');
+    if (wEl) wEl.textContent = `✓ ${correct}`;
+    if (lEl) lEl.textContent = `✗ ${losses}`;
+  }
+  function getNextPeriod() {
+    // Prefer the authoritative server value whenever available
+    if (gameStatePeriod && gameStatePeriod.length > 4) return gameStatePeriod;
+    if (liveHistory.length === 0) return "----";
+    // Fallback: liveHistory = completed rounds; max+1 = current running round
+    let maxPeriod = liveHistory[0].period, maxNum = -1;
+    for (let h of liveHistory) {
+      let m = h.period.match(/\d+$/);
+      if (m) { let n = parseInt(m[0], 10); if (n > maxNum) { maxNum = n; maxPeriod = h.period; } }
+    }
+    const match = maxPeriod.match(/\d+$/);
+    if (match) {
+      let numStr = match[0], num = parseInt(numStr, 10), nextNum = num + 1, nextNumStr = nextNum.toString();
+      while (nextNumStr.length < numStr.length) nextNumStr = "0" + nextNumStr;
+      return maxPeriod.slice(0, maxPeriod.length - numStr.length) + nextNumStr;
+    }
+    return maxPeriod + "+1";
+  }
+  function convertToAB(history) { return history.map(h => h.result === 'SMALL' ? 'A' : 'B'); }
+
+  // =====================================================
+  // PATTERN LIBRARY — A = SMALL, B = BIG
+  // =====================================================
+  const CYCLE_PATTERNS = [
+    { id:'1A1B',   name:'Single Alternating (S→B)',    cycle:['A','B'],                                    weight:0.82 },
+    { id:'2A2B',   name:'Two-in-One (SS→BB)',           cycle:['A','A','B','B'],                            weight:0.83 },
+    { id:'3A3B',   name:'Three-in-One (SSS→BBB)',       cycle:['A','A','A','B','B','B'],                    weight:0.82 },
+    { id:'4A4B',   name:'Quadra Cycle (SSSS→BBBB)',     cycle:['A','A','A','A','B','B','B','B'],            weight:0.81 },
+    { id:'5A5B',   name:'Five-Streak Cycle',            cycle:['A','A','A','A','A','B','B','B','B','B'],    weight:0.80 },
+    { id:'1A2B',   name:'1S+2B',                        cycle:['A','B','B'],                                weight:0.74 },
+    { id:'2A1B',   name:'2S+1B',                        cycle:['A','A','B'],                                weight:0.74 },
+    { id:'1A3B',   name:'1S+3B',                        cycle:['A','B','B','B'],                            weight:0.73 },
+    { id:'3A1B',   name:'3S+1B',                        cycle:['A','A','A','B'],                            weight:0.74 },
+    { id:'3A2B',   name:'3S+2B',                        cycle:['A','A','A','B','B'],                        weight:0.75 },
+    { id:'4A1B',   name:'4S+1B',                        cycle:['A','A','A','A','B'],                        weight:0.74 },
+    { id:'4A2B',   name:'4S+2B',                        cycle:['A','A','A','A','B','B'],                    weight:0.75 },
+    { id:'4A3B',   name:'4S+3B',                        cycle:['A','A','A','A','B','B','B'],                weight:0.75 },
+    { id:'1B1A',   name:'Single Alternating (B→S)',     cycle:['B','A'],                                    weight:0.82 },
+    { id:'2B2A',   name:'Two-in-One (BB→SS)',           cycle:['B','B','A','A'],                            weight:0.83 },
+    { id:'3B3A',   name:'Three-in-One (BBB→SSS)',       cycle:['B','B','B','A','A','A'],                    weight:0.82 },
+    { id:'4B4A',   name:'Quadra Cycle (BBBB→SSSS)',     cycle:['B','B','B','B','A','A','A','A'],            weight:0.81 },
+    { id:'5B5A',   name:'Five-Streak Mirror Cycle',     cycle:['B','B','B','B','B','A','A','A','A','A'],    weight:0.80 },
+    { id:'1B2A',   name:'1B+2S',                        cycle:['B','A','A'],                                weight:0.74 },
+    { id:'2B1A',   name:'2B+1S',                        cycle:['B','B','A'],                                weight:0.74 },
+    { id:'1B3A',   name:'1B+3S',                        cycle:['B','A','A','A'],                            weight:0.73 },
+    { id:'3B1A',   name:'3B+1S',                        cycle:['B','B','B','A'],                            weight:0.74 },
+    { id:'3B2A',   name:'3B+2S',                        cycle:['B','B','B','A','A'],                        weight:0.75 },
+    { id:'4B1A',   name:'4B+1S',                        cycle:['B','B','B','B','A'],                        weight:0.74 },
+    { id:'chain_bs', name:'Cycle Chain (BB→BBB)',       cycle:['B','B','A','A','A'],                        weight:0.73 },
+    { id:'chain_sb', name:'Cycle Chain (SS→SSS)',       cycle:['A','A','B','B','B'],                        weight:0.73 },
+    { id:'comp2r',   name:'Compression 2+2 (BB→SS)',   cycle:['B','B','A','A'],                            weight:0.78 },
+    { id:'comp3r',   name:'Compression 3+3 (BBB→SSS)', cycle:['B','B','B','A','A','A'],                    weight:0.78 },
+  ];
+
+  // =====================================================
+  // ADAPTIVE CONFIDENCE by streak length
+  // Short(1-3) → Medium(4-7) → Long(8-12) → Extreme(13+)
+  // =====================================================
+  function getAdaptiveStreakConf(len) {
+    if (len >= 14) return 0.96;
+    if (len >= 13) return 0.95;
+    if (len >= 10) return 0.93;
+    if (len >= 8)  return 0.91;
+    if (len >= 7)  return 0.89;
+    if (len >= 6)  return 0.86;
+    if (len >= 5)  return 0.83;
+    if (len >= 4)  return 0.79;
+    if (len >= 3)  return 0.73;
+    return 0.68;
+  }
+
+  function getStreakLabel(len) {
+    if (len === 1) return 'Single';
+    if (len === 2) return 'Double';
+    if (len === 3) return 'Triple';
+    if (len === 4) return 'Quadra';
+    if (len === 5) return 'Five Streak';
+    if (len === 6) return 'Six Streak';
+    if (len === 7) return 'Seven Streak';
+    if (len >= 13) return 'Extreme Streak';
+    if (len >= 8)  return 'Long Streak';
+    return `${len}-Streak`;
+  }
+
+  // =====================================================
+  // WEIGHTED PROBABILITY — mean reversion on imbalance
+  // =====================================================
+  function getWeightedHistoryBias(seq) {
+    if (seq.length < 10) return { pred: null, weight: 0 };
+    const recent20 = seq.slice(0, Math.min(seq.length, 20));
+    const aCount = recent20.filter(v => v === 'A').length;
+    const bCount = recent20.length - aCount;
+    const ratio = Math.max(aCount, bCount) / recent20.length;
+    if (ratio >= 0.70) {
+      const dominant = aCount > bCount ? 'A' : 'B';
+      return { pred: dominant === 'A' ? 'B' : 'A', weight: (ratio - 0.5) * 2.0 };
+    }
+    return { pred: null, weight: 0 };
+  }
+
+  // =====================================================
+  // COMPRESSION DETECTOR — uniform alternating run lengths
+  // e.g. BBSSBB = runs [2,2,2] → compression rhythm
+  // =====================================================
+  function detectCompression(runs) {
+    if (runs.length < 4) return null;
+    const r4 = runs.slice(0, 4);
+    const lens = r4.map(r => r.len);
+    const avg = lens.reduce((a, b) => a + b, 0) / lens.length;
+    if (!lens.every(l => Math.abs(l - avg) <= 1) || avg < 1.5) return null;
+    const alternating = r4.every((r, i) => i === 0 || r.val !== r4[i - 1].val);
+    if (!alternating) return null;
+    const cur = runs[0];
+    const avgR = Math.round(avg);
+    if (cur.len < avgR) {
+      return { name: `Compression ${avgR}+${avgR} (in-cluster)`, prediction: cur.val, confidence: 0.76, trending: `Cluster of ${avgR} in progress — continue`, type: 'COMPRESSION' };
+    }
+    return { name: `Compression → Expansion Switch`, prediction: cur.val === 'A' ? 'B' : 'A', confidence: 0.78, trending: `${avgR}-block complete — switch sides`, type: 'COMPRESSION_SWITCH' };
+  }
+
+  // =====================================================
+  // EXPANSION DETECTOR — pure B→S→B→S alternation
+  // =====================================================
+  function detectExpansion(runs) {
+    if (runs.length < 5) return null;
+    const r5 = runs.slice(0, 5);
+    if (r5.every(r => r.len === 1) && r5.every((r, i) => i === 0 || r.val !== r5[i - 1].val)) {
+      return { name: 'Expansion (B→S→B→S)', prediction: runs[0].val === 'A' ? 'B' : 'A', confidence: 0.81, trending: 'Strict alternation — Expansion pattern, next flip', type: 'EXPANSION' };
+    }
+    return null;
+  }
+
+  // =====================================================
+  // CYCLE CHAIN — escalating or descending run lengths
+  // e.g. BB→BBB = cycle chain (Double → Triple → Reversal)
+  // =====================================================
+  function detectCycleChain(runs) {
+    if (runs.length < 3) return null;
+    const [r0, r1, r2] = runs;
+    if (r0.val !== r1.val && r1.val !== r2.val) {
+      // Escalating chain: lengths grow
+      if (r2.len <= r1.len && r1.len <= r0.len) {
+        const opp = r0.val === 'A' ? 'B' : 'A';
+        return { name: `Cycle Chain (${r2.len}→${r1.len}→${r0.len})`, prediction: opp, confidence: 0.75, trending: `Escalating blocks — reversal expected`, type: 'CHAIN' };
+      }
+      // Mirror Opposite: descending after long streak
+      if (r0.len < r1.len && r1.len < r2.len) {
+        const opp = r0.val === 'A' ? 'B' : 'A';
+        return { name: `Mirror Opposite (${r2.len}→${r1.len}→${r0.len})`, prediction: opp, confidence: 0.74, trending: `Mirror rebound — ${r2.len}-streak reflected`, type: 'MIRROR' };
+      }
+    }
+    return null;
+  }
+
+  // =====================================================
+  // EXTENDED PATTERN LIBRARY — per RNG Analyzer spec
+  // =====================================================
+
+  // LADDER — run lengths ascending or descending
+  function detectLadder(runs) {
+    if (runs.length < 4) return null;
+    const lens = runs.slice(0, 5).map(r => r.len);
+    let asc = true, desc = true;
+    for (let i = 1; i < lens.length; i++) {
+      if (lens[i] >= lens[i-1]) asc = false;
+      if (lens[i] <= lens[i-1]) desc = false;
+    }
+    const cur = runs[0], opp = cur.val === 'A' ? 'B' : 'A';
+    if (asc) return { name:`Ladder ↓ (${lens.slice(0,4).join('→')})`, prediction:opp, confidence:0.76, trending:`Ladder collapses — reversal at base`, type:'LADDER', family:'Rhythm' };
+    if (desc) return { name:`Ladder ↑ (${lens.slice(0,4).join('→')})`, prediction:cur.val, confidence:0.73, trending:`Ladder builds — momentum continues`, type:'LADDER', family:'Rhythm' };
+    return null;
+  }
+
+  // PYRAMID — run lengths peak then descend (or Diamond: dip then rise)
+  function detectPyramid(runs) {
+    if (runs.length < 5) return null;
+    const lens = runs.slice(0, 5).map(r => r.len);
+    const cur = runs[0], opp = cur.val === 'A' ? 'B' : 'A';
+    // Pyramid: ascend then descend
+    if (lens[0]<lens[1] && lens[1]<lens[2] && lens[2]>lens[3] && lens[3]>lens[4])
+      return { name:`Pyramid (${lens.join('→')})`, prediction:opp, confidence:0.77, trending:`Pyramid — base collapse, reversal incoming`, type:'PYRAMID', family:'Rhythm' };
+    // Diamond: descend then ascend
+    if (lens[0]>lens[1] && lens[1]>lens[2] && lens[2]<lens[3] && lens[3]<lens[4])
+      return { name:`Diamond (${lens.join('→')})`, prediction:cur.val, confidence:0.74, trending:`Diamond contraction — rebound expected`, type:'DIAMOND', family:'Rhythm' };
+    return null;
+  }
+
+  // HOT/COLD BIAS — heavy frequency imbalance triggers mean reversion
+  function detectHotColdBias(seq) {
+    if (seq.length < 30) return null;
+    const short = seq.slice(0, 30), long = seq.slice(0, Math.min(seq.length, 100));
+    const sB = short.filter(v=>v==='B').length / short.length;
+    const lB = long.filter(v=>v==='B').length / long.length;
+    const sBias = Math.abs(sB - 0.5), lBias = Math.abs(lB - 0.5);
+    if (sBias >= 0.20 && lBias >= 0.12) {
+      const hot = sB > 0.5 ? 'B' : 'A', cold = hot==='B'?'A':'B';
+      const hotL = hot==='B'?'BIG':'SMALL', coldL = cold==='B'?'BIG':'SMALL';
+      const conf = Math.min(0.82, 0.60 + sBias * 0.80);
+      return { name:`Hot/Cold (${hotL} ${Math.round(sB*100)}%)`, prediction:cold, confidence:conf, trending:`${hotL} dominant — mean reversion to ${coldL}`, type:'HOT_COLD', family:'Probability' };
+    }
+    return null;
+  }
+
+  // GAP ANALYSIS — rounds since we last saw the opposite result
+  function detectGapPattern(seq) {
+    if (seq.length < 10) return null;
+    const cur = seq[0], opp = cur==='A'?'B':'A';
+    let gap = 0;
+    for (let i = 0; i < seq.length; i++) { if (seq[i]===opp) break; gap++; }
+    if (gap >= 6) {
+      const label = opp==='B'?'BIG':'SMALL';
+      const conf = Math.min(0.88, 0.65 + gap * 0.025);
+      return { name:`Gap Alert (${gap}-round gap)`, prediction:opp, confidence:conf, trending:`${gap} rounds without ${label} — overdue`, type:'GAP', family:'Probability' };
+    }
+    return null;
+  }
+
+  // THRESHOLD TRIGGER — cumulative balance crosses tipping point
+  function detectThresholdTrigger(seq) {
+    if (seq.length < 20) return null;
+    let balance = 0;
+    const win = seq.slice(0, Math.min(seq.length, 50));
+    for (const v of win) balance += v==='B' ? 1 : -1;
+    if (Math.abs(balance) >= 8) {
+      const dom = balance>0?'B':'A', under = dom==='B'?'A':'B';
+      const domL = dom==='B'?'BIG':'SMALL', underL = under==='B'?'BIG':'SMALL';
+      const conf = Math.min(0.83, 0.65 + Math.abs(balance) * 0.015);
+      return { name:`Threshold (${domL} +${Math.abs(balance)})`, prediction:under, confidence:conf, trending:`${domL} overloaded (${Math.abs(balance)}) → ${underL} correction`, type:'THRESHOLD', family:'Probability' };
+    }
+    return null;
+  }
+
+  // MODULO CYCLE — every N rounds the sequence repeats (PRNG fingerprint)
+  function detectModuloCycle(seq) {
+    if (seq.length < 20) return null;
+    let best = { period:0, score:0, nextPred:null };
+    for (let p = 4; p <= 14; p++) {
+      if (seq.length < p * 3) continue;
+      let m = 0, t = 0;
+      for (let i = 0; i < seq.length - p; i++) { if (seq[i]===seq[i+p]) m++; t++; }
+      const score = m / t;
+      if (score > 0.72 && score > best.score) best = { period:p, score, nextPred:seq[p] };
+    }
+    if (best.period > 0 && best.nextPred) {
+      const label = best.nextPred==='B'?'BIG':'SMALL';
+      const conf = Math.min(0.84, 0.55 + (best.score - 0.72) * 2.0);
+      return { name:`Modulo Cycle (p=${best.period}, ${Math.round(best.score*100)}%)`, prediction:best.nextPred, confidence:conf, trending:`PRNG repeats every ${best.period} rounds → ${label}`, type:'MODULO', family:'Meta-Pattern' };
+    }
+    return null;
+  }
+
+  // ECHO PATTERN — recent 6-round block matches a block from N rounds ago
+  function detectEchoPattern(seq) {
+    if (seq.length < 16) return null;
+    const checkLen = 6;
+    let bestOffset = 0, bestMatches = 0;
+    for (let offset = checkLen+1; offset <= Math.min(seq.length-checkLen, 40); offset++) {
+      let m = 0;
+      for (let i = 0; i < checkLen; i++) { if (seq[i]===seq[offset+i]) m++; }
+      if (m > bestMatches) { bestMatches = m; bestOffset = offset; }
+    }
+    if (bestMatches >= 5 && bestOffset > 0) {
+      const echoPred = seq[bestOffset - 1];
+      const label = echoPred==='B'?'BIG':'SMALL';
+      const conf = Math.min(0.80, 0.58 + (bestMatches-5)*0.05);
+      return { name:`Echo (${bestMatches}/6 @-${bestOffset})`, prediction:echoPred, confidence:conf, trending:`Sequence echoes from −${bestOffset} rounds → ${label}`, type:'ECHO', family:'Meta-Pattern' };
+    }
+    return null;
+  }
+
+  // SNAKE RUN — alternating sides with non-uniform varying run lengths
+  function detectSnakeRun(runs) {
+    if (runs.length < 6) return null;
+    const r6 = runs.slice(0, 6);
+    const alternating = r6.every((r,i) => i===0 || r.val!==r6[i-1].val);
+    if (!alternating) return null;
+    const lens = r6.map(r=>r.len);
+    const mx = Math.max(...lens), mn = Math.min(...lens);
+    if (mx===mn) return null; // compression, not snake
+    if (mx >= 2 && mx <= 6) {
+      const cur = runs[0], opp = cur.val==='A'?'B':'A';
+      return { name:`Snake Run (${lens.join('→')})`, prediction:opp, confidence:0.72, trending:`Zigzag varying lengths — Snake Run, next flip`, type:'SNAKE', family:'Alternation' };
+    }
+    return null;
+  }
+
+  // FRACTAL CHAIN — micro-pattern (4) repeats inside macro-window (12)
+  function detectFractalChain(seq) {
+    if (seq.length < 30) return null;
+    const micro = seq.slice(0,4).join('');
+    const macro = seq.slice(0,16).join('');
+    let count = 0;
+    for (let i = 0; i <= macro.length - micro.length; i++)
+      if (macro.slice(i, i+micro.length)===micro) count++;
+    if (count >= 2) {
+      const cont = seq[0];
+      const label = cont==='B'?'BIG':'SMALL';
+      return { name:`Fractal Chain (${micro}×${count})`, prediction:cont, confidence:0.70, trending:`Self-similar micro-pattern ×${count} — fractal continuation → ${label}`, type:'FRACTAL', family:'Meta-Pattern' };
+    }
+    return null;
+  }
+
+  // PRNG CYCLE DETECTION — long-term cycle search on full 500-round history
+  function detectPRNGCycle(seq) {
+    if (seq.length < 50) return null;
+    const check = seq.slice(0, Math.min(seq.length, 500));
+    let best = { len:0, score:0, nextPred:null };
+    for (let cycleLen = 10; cycleLen <= 50; cycleLen++) {
+      if (check.length < cycleLen * 3) continue;
+      const pattern = check.slice(check.length - cycleLen);
+      let m = 0, t = 0;
+      const cycles = Math.floor(check.length / cycleLen);
+      for (let c = 0; c < cycles - 1; c++) {
+        for (let i = 0; i < cycleLen; i++) {
+          if (check[c*cycleLen+i]===pattern[i%cycleLen]) m++;
+          t++;
+        }
+      }
+      const score = t > 0 ? m/t : 0;
+      if (score > 0.70 && score > best.score) {
+        const phase = check.length % cycleLen;
+        best = { len:cycleLen, score, nextPred:pattern[phase] };
+      }
+    }
+    if (best.len > 0 && best.nextPred) {
+      const label = best.nextPred==='B'?'BIG':'SMALL';
+      const conf = Math.min(0.86, 0.58 + (best.score - 0.70) * 2.0);
+      return { name:`PRNG Cycle (len=${best.len}, ${Math.round(best.score*100)}%)`, prediction:best.nextPred, confidence:conf, trending:`Weak PRNG cycle (${best.len}-round repeat) → ${label}`, type:'PRNG_CYCLE', family:'Cycle Detection' };
+    }
+    return null;
+  }
+
+  // =====================================================
+  // WAVEFORM — alternating runs forming a sinusoidal wave
+  // =====================================================
+  function detectWaveform(runs) {
+    if (runs.length < 6) return null;
+    const r6 = runs.slice(0, 6);
+    if (!r6.every((r,i) => i===0 || r.val !== r6[i-1].val)) return null;
+    const lens = r6.map(r => r.len);
+    const diff = lens.slice(1).map((l,i) => l - lens[i]);
+    let peaks = 0;
+    for (let i = 1; i < diff.length; i++) if (diff[i] * diff[i-1] < 0) peaks++;
+    if (peaks >= 2) {
+      const cur = runs[0], opp = cur.val==='A'?'B':'A';
+      const pred = lens[0] > lens[1] ? cur.val : opp;
+      return { name:`Waveform (${lens.join('→')})`, prediction:pred, confidence:0.73, trending:`Wave rhythm detected`, type:'WAVEFORM', family:'Rhythm' };
+    }
+    return null;
+  }
+
+  // =====================================================
+  // SPIRAL — progressively tightening or loosening runs
+  // =====================================================
+  function detectSpiral(runs) {
+    if (runs.length < 5) return null;
+    const r5 = runs.slice(0, 5);
+    if (!r5.every((r,i) => i===0 || r.val !== r5[i-1].val)) return null;
+    const lens = r5.map(r => r.len);
+    const tight = lens.every((l,i) => i===0 || l <= lens[i-1]) && lens[0] !== lens[4];
+    const loose = lens.every((l,i) => i===0 || l >= lens[i-1]) && lens[0] !== lens[4];
+    const cur = runs[0], opp = cur.val==='A'?'B':'A';
+    if (tight) return { name:`Spiral ↓ (${lens.join('→')})`, prediction:opp, confidence:0.74, trending:`Tightening spiral — reversal at core`, type:'SPIRAL', family:'Rhythm' };
+    if (loose) return { name:`Spiral ↑ (${lens.join('→')})`, prediction:cur.val, confidence:0.72, trending:`Loosening spiral — expansion continues`, type:'SPIRAL', family:'Rhythm' };
+    return null;
+  }
+
+  // =====================================================
+  // PARITY CHAIN — even/odd alternation of game numbers
+  // =====================================================
+  function detectParityChain(history) {
+    if (history.length < 10) return null;
+    const slice = history.slice(0, 20);
+    const parities = slice.map(h => h.number % 2 === 0 ? 'E' : 'O');
+    let altCount = 0;
+    for (let i = 1; i < parities.length; i++) if (parities[i] !== parities[i-1]) altCount++;
+    const ratio = altCount / (parities.length - 1);
+    if (ratio >= 0.75) {
+      const nextP = parities[0] === 'E' ? 'O' : 'E';
+      const bigOdd  = slice.filter(h => h.result==='BIG'   && h.number%2!==0).length;
+      const bigEven = slice.filter(h => h.result==='BIG'   && h.number%2===0).length;
+      const smlOdd  = slice.filter(h => h.result==='SMALL' && h.number%2!==0).length;
+      const smlEven = slice.filter(h => h.result==='SMALL' && h.number%2===0).length;
+      const pred = nextP==='O' ? (bigOdd>smlOdd?'B':'A') : (bigEven>smlEven?'B':'A');
+      return { name:`Parity Chain (${Math.round(ratio*100)}%)`, prediction:pred, confidence:Math.min(0.78, 0.58+ratio*0.25), trending:`Even/odd alternating — parity chain active`, type:'PARITY', family:'Alternation' };
+    }
+    return null;
+  }
+
+  // =====================================================
+  // CACHED PRNG CYCLE — only recomputes when new data arrives
+  // =====================================================
+  function detectPRNGCycleCached() {
+    if (liveHistory.length === prngCycleCache.count) return prngCycleCache.result;
+    const seq = convertToAB(liveHistory);
+    const result = detectPRNGCycle(seq);
+    prngCycleCache = { count: liveHistory.length, result };
+    return result;
+  }
+
+  // =====================================================
+  // HUMAN-FRIENDLY ALERT ENGINE
+  // =====================================================
+  function getPatternAlert(type, ctx) {
+    const { streakLen, streakSide, prediction } = ctx;
+    const flip = streakSide === 'BIG' ? 'SMALL' : 'BIG';
+    const pred = prediction === 'B' ? 'BIG' : 'SMALL';
+    switch (type) {
+      case 'EXTREME':     return `This run has gone on too long. It usually flips soon — ${flip} is almost certain now.`;
+      case 'LONG':        return `That's a long run. The longer it goes, the more likely a flip becomes. Watch for ${flip}.`;
+      case 'SEVEN':       return `Seven in a row. Extended streaks like this usually break. Be ready to flip to ${flip}.`;
+      case 'SIX':         return `Six straight. We're in flip territory — ${flip} expected.`;
+      case 'FIVE':        return `Five in a row is a strong signal. A flip to ${flip} is likely coming.`;
+      case 'QUADRA_STREAK': return `Four in a row. The flip signal is building. Watch for ${flip}.`;
+      case 'TRIPLE':      return `Three in a row. Expect ${flip} to show up soon.`;
+      case 'DOUBLE':      return `A pair came through. The mirror ${flip} is likely next.`;
+      case 'SINGLE':
+      case 'EXPANSION':   return `It's flipping back and forth. Expect the opposite next — ${pred}.`;
+      case 'TWO_IN_ONE':  return `Results are coming in pairs. The pattern usually holds — stay with it.`;
+      case 'THREE_IN_ONE': return `Triple-block cycle is running strong. The rhythm is clear.`;
+      case 'QUADRA':      return `Four-block rhythm detected. Trust the cycle.`;
+      case 'COMPRESSION': return `Outcomes are packed tight. Expect repeats close together.`;
+      case 'COMPRESSION_SWITCH': return `The tight cluster just ended. Expect a shift in direction now.`;
+      case 'CHAIN':       return `The streak just got interrupted. Things might get messy next.`;
+      case 'MIRROR':      return `That streak just snapped. Don't count on it continuing.`;
+      case 'HOT_COLD':    return `One side has been dominating. Expect it to cool off — the other side is overdue.`;
+      case 'GAP':         return `It's been a while since we saw ${flip}. It's overdue — it's coming.`;
+      case 'THRESHOLD':   return `The balance has tipped too far one way. A correction is inevitable now.`;
+      case 'MODULO':      return `There's a repeating cycle hidden in the sequence. Trust the math on this one.`;
+      case 'ECHO':        return `This sequence is echoing what happened before. History may repeat here.`;
+      case 'SNAKE':       return `Zigzagging with no clear lead. The next flip is coming — play it safe.`;
+      case 'FRACTAL':     return `The same mini-pattern keeps showing up. It may continue — watch for the repeat.`;
+      case 'LADDER':      return `Run lengths are stepping like a staircase. Watch the next step closely.`;
+      case 'PYRAMID':     return `The pattern peaked and is winding down. A reversal is near.`;
+      case 'DIAMOND':     return `A tight contraction, now expanding again. Expect a rebound.`;
+      case 'WAVEFORM':    return `Results are riding a wave. Stay with the rhythm — ${pred} is next.`;
+      case 'SPIRAL':      return `The pattern is tightening. When it closes, it flips — watch carefully.`;
+      case 'PARITY':      return `Even/odd parity is alternating consistently. The parity chain is running.`;
+      case 'PRNG_CYCLE':  return `A hidden cycle is running in the background. Trust the math — the RNG is predictable here.`;
+      default:            return `Pattern detected. Signal points to ${pred}.`;
+    }
+  }
+
+  // =====================================================
+  // MOMENTUM BIAS — continuation vs reversal signal
+  // =====================================================
+  function getMomentumBias(seq, streakLen) {
+    if (seq.length < 5) return 'neutral';
+    if (streakLen >= 5) return 'reversal';
+    if (streakLen >= 4) return 'reversal';
+    if (streakLen === 3) return 'watch';
+    // Short streak — check if 4 of last 5 are same side (momentum)
+    const last5 = seq.slice(0, 5);
+    const dom = last5.filter(v => v === seq[0]).length;
+    if (dom >= 4 && streakLen <= 2) return 'momentum';
+    return 'neutral';
+  }
+
+  // Match recent sequence against a repeating cycle.
+  function matchCycle(seq, cycle) {
+    const cLen = cycle.length;
+    if (seq.length < Math.max(cLen, 3)) return { match: false };
+    const checkLen = Math.min(seq.length, cLen * 3);
+    let bestScore = 0, bestNextPred = null;
+    for (let curPhase = 0; curPhase < cLen; curPhase++) {
+      let matches = 0;
+      for (let i = 0; i < checkLen; i++) {
+        const phase = ((curPhase - i) % cLen + cLen) % cLen;
+        if (seq[i] === cycle[phase]) matches++;
+      }
+      const score = matches / checkLen;
+      if (score > bestScore) {
+        bestScore = score;
+        bestNextPred = cycle[(curPhase + 1) % cLen];
+      }
+    }
+    if (bestScore < 0.75) return { match: false };
+    return { match: true, score: bestScore, nextPred: bestNextPred };
+  }
+
+  // Run-length encode sequence (most-recent first)
+  function runLengthEncode(seq) {
+    if (!seq.length) return [];
+    const runs = [];
+    let cur = seq[0], count = 1;
+    for (let i = 1; i < seq.length; i++) {
+      if (seq[i] === cur) count++;
+      else { runs.push({ val: cur, len: count }); cur = seq[i]; count = 1; }
+    }
+    runs.push({ val: cur, len: count });
+    return runs;
+  }
+
+  // =====================================================
+  // FULL TREND DETECTION ENGINE
+  // Covers all streak types + rhythm + chain patterns
+  // =====================================================
+  function detectTrend(seq) {
+    const recent = seq.slice(0, Math.min(seq.length, 100));
+    const runs = runLengthEncode(recent);
+    if (!runs.length) return null;
+
+    const cur = runs[0];
+    const runLens = runs.map(r => r.len);
+    const opp = cur.val === 'A' ? 'B' : 'A';
+    const label = cur.val === 'A' ? 'SMALL' : 'BIG';
+    const oppLabel = opp === 'A' ? 'SMALL' : 'BIG';
+
+    // === EXTREME STREAK (13-14+) — Mirror Opposite Rule ===
+    if (cur.len >= 13) {
+      return { name: `⚡ Extreme ${cur.len}× ${label}`, prediction: opp, confidence: getAdaptiveStreakConf(cur.len), trending: `${cur.len} in a row — Mirror Opposite → ${oppLabel} INEVITABLE`, type: 'EXTREME' };
+    }
+
+    // === LONG STREAK (8-12) — very high reversal probability ===
+    if (cur.len >= 8) {
+      return { name: `🔴 Long Streak (${cur.len}× ${label})`, prediction: opp, confidence: getAdaptiveStreakConf(cur.len), trending: `${cur.len} consecutive — long streak, very high reversal`, type: 'LONG' };
+    }
+
+    // === SEVEN STREAK — extended, reversal imminent ===
+    if (cur.len === 7) {
+      return { name: `Seven Streak (${label})`, prediction: opp, confidence: getAdaptiveStreakConf(7), trending: `7 in a row — extended streak, reversal imminent`, type: 'SEVEN' };
+    }
+
+    // === SIX STREAK — flip zone ===
+    if (cur.len === 6) {
+      return { name: `Six Streak (${label})`, prediction: opp, confidence: getAdaptiveStreakConf(6), trending: `6 in a row — flip zone, ${oppLabel} expected`, type: 'SIX' };
+    }
+
+    // === FIVE STREAK — strong flip signal ===
+    if (cur.len === 5) {
+      return { name: `Five Streak (${label})`, prediction: opp, confidence: getAdaptiveStreakConf(5), trending: `5 in a row — strong flip signal → ${oppLabel}`, type: 'FIVE' };
+    }
+
+    // === EXPANSION (B→S→B→S) ===
+    const expansion = detectExpansion(runs);
+    if (expansion) return expansion;
+
+    // === THREE-IN-ONE (BBB→SSS→BBB) ===
+    if (runs.length >= 2 && runLens.slice(0, 2).every(l => l === 3)) {
+      const next = cur.len >= 3 ? opp : cur.val;
+      return { name: `Three-in-One (${label}→${oppLabel})`, prediction: next, confidence: 0.81, trending: `Triple blocks alternating — Three-in-One cycle`, type: 'THREE_IN_ONE' };
+    }
+
+    // === TWO-IN-ONE (BB→SS→BB) ===
+    if (runs.length >= 3 && runLens.slice(0, 3).every(l => l === 2)) {
+      const next = cur.len >= 2 ? opp : cur.val;
+      return { name: `Two-in-One (${label}→${oppLabel})`, prediction: next, confidence: 0.80, trending: `Pair alternation — Two-in-One cycle`, type: 'TWO_IN_ONE' };
+    }
+
+    // === QUADRA TREND (4+4) ===
+    if (runs.length >= 2 && runLens.slice(0, 2).every(l => l === 4)) {
+      const next = cur.len >= 4 ? opp : cur.val;
+      return { name: `Quadra Cycle (${label}→${oppLabel})`, prediction: next, confidence: 0.81, trending: `4-block alternating — Quadra Cycle`, type: 'QUADRA' };
+    }
+
+    // === COMPRESSION / EXPANSION RHYTHM ===
+    const compression = detectCompression(runs);
+    if (compression) return compression;
+
+    // === CYCLE CHAIN / MIRROR OPPOSITE ===
+    const chain = detectCycleChain(runs);
+    if (chain) return chain;
+
+    // === SINGLE TREND (pure alternation) ===
+    if (runs.length >= 4 && runLens.slice(0, 4).every(l => l === 1)) {
+      return { name: `Single Trend (S→B→S→B)`, prediction: opp, confidence: 0.80, trending: `Strict alternation — Single Trend, continue flip`, type: 'SINGLE' };
+    }
+
+    // === QUADRA STREAK (4 in a row) ===
+    if (cur.len === 4) {
+      return { name: `Quadra (${cur.val === 'A' ? 'SSSS' : 'BBBB'})`, prediction: opp, confidence: getAdaptiveStreakConf(4), trending: `4 consecutive — Quadra, expect flip`, type: 'QUADRA_STREAK' };
+    }
+
+    // === TRIPLE STREAK (3 in a row) — opposite expected ===
+    if (cur.len === 3) {
+      return { name: `Triple (${cur.val === 'A' ? 'SSS' : 'BBB'})`, prediction: opp, confidence: getAdaptiveStreakConf(3), trending: `3 consecutive — Triple, expect ${oppLabel}`, type: 'TRIPLE' };
+    }
+
+    // === DOUBLE + Cycle Chain signals ===
+    if (cur.len === 2 && runs.length >= 2) {
+      const prev = runs[1];
+      if (prev.len === 3) {
+        return { name: `Cycle Chain (BBB→${cur.val === 'B' ? 'BB' : 'SS'})`, prediction: opp, confidence: 0.75, trending: `Chain: Triple→Double — reversal next`, type: 'CHAIN' };
+      }
+      return { name: `Double (${cur.val === 'A' ? 'SS' : 'BB'})`, prediction: opp, confidence: 0.70, trending: `2 consecutive — Double, mirror expected`, type: 'DOUBLE' };
+    }
+
+    // === SINGLE + post-streak context ===
+    if (cur.len === 1 && runs.length >= 2) {
+      const prev = runs[1];
+      if (prev.len >= 3) {
+        return { name: `Mirror Opposite (post-${prev.len})`, prediction: cur.val, confidence: 0.72, trending: `After ${prev.len}-streak, one flip seen — continuation likely`, type: 'MIRROR' };
+      }
+    }
+
+    return null;
+  }
+
+  // =====================================================
+  // MULTI-METHOD VOTING ENGINE (6 methods)
+  // =====================================================
+  function detectPattern(abSeq) {
+    if (abSeq.length < 2) return { pattern: 'Insufficient data', next: 'B', confidence: 0.50, trendName: '', trendDir: '', streakLen: 0 };
+
+    const recent = abSeq.slice(0, Math.min(abSeq.length, 100));
+    const runs = runLengthEncode(recent);
+
+    // Current streak length
+    let streakLen = 0;
+    const latestVal = recent[0];
+    for (const v of recent) { if (v === latestVal) streakLen++; else break; }
+
+    // === SHORT-CIRCUIT: Medium/Long/Extreme streaks (≥5) override all methods ===
+    if (streakLen >= 5) {
+      const flip = latestVal === 'A' ? 'B' : 'A';
+      const label = latestVal === 'A' ? 'SMALL' : 'BIG';
+      const flipLabel = flip === 'A' ? 'SMALL' : 'BIG';
+      const conf = getAdaptiveStreakConf(streakLen);
+      const sLabel = getStreakLabel(streakLen);
+      let trendDir = `${streakLen} in a row — FLIP EXPECTED`;
+      if (streakLen >= 13) trendDir = `${streakLen} in a row — Mirror Opposite → ${flipLabel} INEVITABLE`;
+      else if (streakLen >= 10) trendDir = `${streakLen} in a row — extreme reversal zone`;
+      else if (streakLen >= 7) trendDir = `${streakLen} in a row — extended streak, reversal imminent`;
+      const sType = streakLen >= 13 ? 'EXTREME' : streakLen >= 10 ? 'LONG' : streakLen === 7 ? 'SEVEN' : streakLen === 6 ? 'SIX' : 'FIVE';
+      return {
+        pattern: `🚨 ${sLabel}: ${streakLen}× ${label}`,
+        next: flip,
+        confidence: conf,
+        trendName: `${sLabel} Alert (${streakLen}× ${label})`,
+        trendDir,
+        streakLen,
+        family: 'Streak',
+        activeType: sType
+      };
+    }
+
+    const votes = { A: 0, B: 0 };
+    let topPattern = null, topScore = 0;
+    let trendName = '', trendDir = '';
+
+    // === METHOD 1: Cycle pattern matching ===
+    for (const cp of CYCLE_PATTERNS) {
+      const res = matchCycle(recent, cp.cycle);
+      if (res.match) {
+        const w = cp.weight * res.score * 2.2;
+        votes[res.nextPred] = (votes[res.nextPred] || 0) + w;
+        if (res.score * cp.weight > topScore) { topScore = res.score * cp.weight; topPattern = { name: cp.name, conf: cp.weight * res.score }; }
+      }
+    }
+
+    // === METHOD 2: Adaptive streak confidence (streakLen 3-4) ===
+    if (streakLen >= 3) {
+      const streakPred = latestVal === 'A' ? 'B' : 'A';
+      const adaptConf = getAdaptiveStreakConf(streakLen);
+      const streakW = adaptConf * 2.5;
+      votes[streakPred] = (votes[streakPred] || 0) + streakW;
+      const sn = `${getStreakLabel(streakLen)}: ${streakLen}× ${latestVal === 'A' ? 'SMALL' : 'BIG'}`;
+      if (!topPattern || adaptConf > topPattern.conf) { topPattern = { name: sn, conf: adaptConf }; topScore = adaptConf; }
+    }
+
+    // === METHOD 3: Full trend detection (all rhythm/chain/streak patterns) ===
+    const trend = detectTrend(recent);
+    if (trend) {
+      const tw = trend.confidence * 1.8;
+      votes[trend.prediction] = (votes[trend.prediction] || 0) + tw;
+      trendName = trend.name;
+      trendDir = trend.trending;
+    }
+
+    // === METHOD 4: Weighted probability (mean reversion on imbalance) ===
+    const histBias = getWeightedHistoryBias(recent);
+    if (histBias.pred) {
+      votes[histBias.pred] = (votes[histBias.pred] || 0) + histBias.weight;
+    }
+
+    // === METHOD 5: Compression / Expansion rhythm votes ===
+    if (runs.length >= 4) {
+      const expansion = detectExpansion(runs);
+      if (expansion) {
+        votes[expansion.prediction] = (votes[expansion.prediction] || 0) + expansion.confidence * 1.5;
+        if (!trendName) { trendName = expansion.name; trendDir = expansion.trending; }
+      }
+      const compression = detectCompression(runs);
+      if (compression) {
+        votes[compression.prediction] = (votes[compression.prediction] || 0) + compression.confidence * 1.5;
+        if (!trendName) { trendName = compression.name; trendDir = compression.trending; }
+      }
+    }
+
+    // === METHOD 6: Recency weighted vote (last 10, mean reversion) ===
+    const win = recent.slice(0, 10);
+    const aC = win.filter(v => v === 'A').length;
+    const bC = win.length - aC;
+    const recPred = aC > bC ? 'B' : 'A';
+    const recConf = Math.max(aC, bC) / win.length * 0.55;
+    votes[recPred] = (votes[recPred] || 0) + recConf;
+
+    // === METHOD 7: Ladder / Pyramid / Diamond rhythm ===
+    const ladderR = detectLadder(runs);
+    if (ladderR) { votes[ladderR.prediction] = (votes[ladderR.prediction]||0) + ladderR.confidence * 1.4; if (!trendName) { trendName = ladderR.name; trendDir = ladderR.trending; } }
+    const pyramidR = detectPyramid(runs);
+    if (pyramidR) { votes[pyramidR.prediction] = (votes[pyramidR.prediction]||0) + pyramidR.confidence * 1.4; if (!trendName) { trendName = pyramidR.name; trendDir = pyramidR.trending; } }
+
+    // === METHOD 8: Hot/Cold Bias ===
+    const hotCold = detectHotColdBias(recent);
+    if (hotCold) { votes[hotCold.prediction] = (votes[hotCold.prediction]||0) + hotCold.confidence * 1.3; if (!trendName) { trendName = hotCold.name; trendDir = hotCold.trending; } }
+
+    // === METHOD 9: Gap Analysis + Threshold Trigger ===
+    const gapR = detectGapPattern(recent);
+    if (gapR) { votes[gapR.prediction] = (votes[gapR.prediction]||0) + gapR.confidence * 1.7; if (!trendName) { trendName = gapR.name; trendDir = gapR.trending; } if (!topPattern || gapR.confidence > topPattern.conf) { topPattern = { name: gapR.name, conf: gapR.confidence }; } }
+    const threshR = detectThresholdTrigger(recent);
+    if (threshR) { votes[threshR.prediction] = (votes[threshR.prediction]||0) + threshR.confidence * 1.2; if (!trendName) { trendName = threshR.name; trendDir = threshR.trending; } }
+
+    // === METHOD 10: Modulo Cycle + Echo Pattern (PRNG fingerprints) ===
+    const moduloR = detectModuloCycle(recent);
+    if (moduloR) { votes[moduloR.prediction] = (votes[moduloR.prediction]||0) + moduloR.confidence * 1.6; if (!trendName) { trendName = moduloR.name; trendDir = moduloR.trending; } if (!topPattern || moduloR.confidence > topPattern.conf) { topPattern = { name: moduloR.name, conf: moduloR.confidence }; } }
+    const echoR = detectEchoPattern(recent);
+    if (echoR) { votes[echoR.prediction] = (votes[echoR.prediction]||0) + echoR.confidence * 1.4; if (!trendName) { trendName = echoR.name; trendDir = echoR.trending; } }
+
+    // === METHOD 11: Snake Run + Fractal Chain ===
+    const snakeR = detectSnakeRun(runs);
+    if (snakeR) { votes[snakeR.prediction] = (votes[snakeR.prediction]||0) + snakeR.confidence * 1.3; if (!trendName) { trendName = snakeR.name; trendDir = snakeR.trending; } }
+    const fractalR = detectFractalChain(recent);
+    if (fractalR) { votes[fractalR.prediction] = (votes[fractalR.prediction]||0) + fractalR.confidence * 1.2; if (!trendName) { trendName = fractalR.name; trendDir = fractalR.trending; } }
+
+    // === METHOD 12: Long-term PRNG Cycle Detection (cached) ===
+    const prngR = detectPRNGCycleCached();
+    if (prngR) { votes[prngR.prediction] = (votes[prngR.prediction]||0) + prngR.confidence * 1.8; if (!topPattern || prngR.confidence > topPattern.conf) { topPattern = { name: prngR.name, conf: prngR.confidence }; } if (!trendName) { trendName = prngR.name; trendDir = prngR.trending; } }
+
+    // === METHOD 13: Waveform rhythm ===
+    const waveR = detectWaveform(runs);
+    if (waveR) { votes[waveR.prediction] = (votes[waveR.prediction]||0) + waveR.confidence * 1.3; if (!trendName) { trendName = waveR.name; trendDir = waveR.trending; } }
+
+    // === METHOD 14: Spiral rhythm ===
+    const spiralR = detectSpiral(runs);
+    if (spiralR) { votes[spiralR.prediction] = (votes[spiralR.prediction]||0) + spiralR.confidence * 1.3; if (!trendName) { trendName = spiralR.name; trendDir = spiralR.trending; } }
+
+    // === METHOD 15: Parity Chain (odd/even of game numbers) ===
+    const parityR = detectParityChain(liveHistory);
+    if (parityR) { votes[parityR.prediction] = (votes[parityR.prediction]||0) + parityR.confidence * 1.2; if (!trendName) { trendName = parityR.name; trendDir = parityR.trending; } }
+
+    // === METHOD 16: PRNG Digit-Aware Trend Family (19-family taxonomy) ===
+    // Uses liveHistory[].number + .result to detect digit-level PRNG patterns.
+    (() => {
+      if (liveHistory.length < 3) return;
+      const h        = liveHistory.slice(0, 20);
+      const curCol   = h[0].result;     // 'BIG' or 'SMALL'
+      const curNum   = Number(h[0].number);
+      const A        = 'A', B = 'B';   // A=SMALL, B=BIG in votes
+      const curVote  = curCol === 'BIG' ? B : A;
+      const oppVote  = curVote === A ? B : A;
+
+      // Current streak
+      let sl = 0;
+      for (const r of h) { if (r.result === curCol) sl++; else break; }
+
+      // Reset Burst (15+): strong opposite boost
+      if (sl >= 15) { votes[oppVote] = (votes[oppVote]||0) + 2.8; trendName = trendName || '🔄 Reset Burst'; return; }
+      // Exhaustion Reversal (8-12)
+      if (sl >= 8)  { votes[oppVote] = (votes[oppVote]||0) + 2.2; trendName = trendName || '⚡ Exhaustion Reversal'; return; }
+
+      // Symmetry Loop: BIG X → SMALL Y → BIG X → SMALL Y
+      if (h.length >= 4 &&
+          h[0].result === h[2].result && h[1].result === h[3].result &&
+          Number(h[0].number) === Number(h[2].number) &&
+          Number(h[1].number) === Number(h[3].number)) {
+        const symVote = h[1].result === 'BIG' ? B : A;
+        votes[symVote] = (votes[symVote]||0) + 2.0;
+        if (!trendName) { trendName = '🔁 Symmetry Loop'; trendDir = `Mirror: ${h[0].result} ${h[0].number} → ${h[1].result} ${h[1].number}`; }
+        return;
+      }
+
+      // Mirrors: digit pair sums to 10 across last 2 rounds with color flip
+      if (h.length >= 2) {
+        const sp = curNum + Number(h[1].number);
+        if (sp === 10 && h[0].result !== h[1].result) {
+          const mv = h[1].result === 'BIG' ? B : A;
+          votes[mv] = (votes[mv]||0) + 1.8;
+          if (!trendName) { trendName = '🪞 Mirrors'; trendDir = `${h[0].result}${curNum} ↔ ${h[1].result}${h[1].number}`; }
+          return;
+        }
+      }
+
+      // Spike: BIG 9 or SMALL 0 after mid-range → return to normal
+      if ((curCol === 'BIG' && curNum === 9) || (curCol === 'SMALL' && curNum === 0)) {
+        if (h.length >= 2) {
+          const pn = Number(h[1].number);
+          if (pn >= 3 && pn <= 7) {
+            votes[oppVote] = (votes[oppVote]||0) + 1.9;
+            if (!trendName) { trendName = '⚡ Spike'; trendDir = `Spike ${curCol} ${curNum} → return`; }
+            return;
+          }
+        }
+      }
+
+      // Momentum Bias: BIG 7/8/9 or SMALL 0/1 → continue
+      if ((curCol === 'BIG' && curNum >= 7) || (curCol === 'SMALL' && curNum <= 1)) {
+        votes[curVote] = (votes[curVote]||0) + 1.7;
+        if (!trendName) { trendName = '🚀 Momentum Bias'; trendDir = `Strong digit ${curNum} → ${curCol} continues`; }
+        return;
+      }
+
+      // Breakers: SMALL 0/1 after BIG streak → SMALL takes over
+      if (curCol === 'SMALL' && (curNum === 0 || curNum === 1)) {
+        const prevBigs = h.slice(1, 5).filter(r => r.result === 'BIG').length;
+        if (prevBigs >= 2) {
+          votes[A] = (votes[A]||0) + 1.8;
+          if (!trendName) { trendName = '🚨 Breaker'; trendDir = `SMALL ${curNum} breaks BIG streak`; }
+          return;
+        }
+      }
+
+      // False Break: single opposite inside streak → original color returns
+      if (sl === 1 && h.length >= 4) {
+        const pColor = h[1].result;
+        let priorLen = 0;
+        for (let i = 1; i < h.length; i++) { if (h[i].result === pColor) priorLen++; else break; }
+        if (priorLen >= 3) {
+          const rv = pColor === 'BIG' ? B : A;
+          votes[rv] = (votes[rv]||0) + 1.7;
+          if (!trendName) { trendName = '🎭 False Break'; trendDir = `${pColor} streak resumes`; }
+          return;
+        }
+      }
+
+      // Doublets/Triplets: same digit twice/thrice → reversal
+      if (h.length >= 2 && curNum === Number(h[1].number)) {
+        const isTriple = h.length >= 3 && curNum === Number(h[2].number);
+        votes[oppVote] = (votes[oppVote]||0) + (isTriple ? 1.9 : 1.6);
+        if (!trendName) { trendName = isTriple ? '🎯 Triplets' : '🎯 Doublets'; trendDir = `Digit ${curNum} ×${isTriple?3:2} → reversal`; }
+        return;
+      }
+
+      // Echo Pattern: same digit at gap 2-3 rounds → continuation
+      for (let gap = 2; gap <= 3; gap++) {
+        if (h[gap] && curNum === Number(h[gap].number) && curNum !== Number(h[1].number)) {
+          votes[curVote] = (votes[curVote]||0) + 1.5;
+          if (!trendName) { trendName = '📡 Echo Pattern'; trendDir = `Digit ${curNum} echoes at −${gap}`; }
+          return;
+        }
+      }
+
+      // Drift Pattern: gradual color shift over 10-15 rounds
+      if (h.length >= 15) {
+        const early = h.slice(8, 15).filter(r => r.result === curCol).length;
+        const late  = h.slice(0, 7).filter(r => r.result === curCol).length;
+        if (late > early + 2) { votes[curVote] = (votes[curVote]||0) + 1.3; if (!trendName) trendName = '📈 Drift Pattern'; }
+        else if (early > late + 2) { votes[oppVote] = (votes[oppVote]||0) + 1.3; if (!trendName) trendName = '📉 Drift Pattern'; }
+      }
+    })();
+
+    // === METHOD 17: Python predict_next port (exhaustion/breaker/continuation/weighted) ===
+    // Exact port of user-provided Python predict_next() — deterministic rules fire with high weight.
+    (() => {
+      if (liveHistory.length === 0) return;
+      const last      = liveHistory[0];
+      const sColor    = last.result;
+      const lastNum   = Number(last.number);
+      const A = 'A', B = 'B';
+      const curVote   = sColor === 'BIG' ? B : A;
+      const oppVote   = curVote === A ? B : A;
+      let sl = 0;
+      for (const r of liveHistory) { if (r.result === sColor) sl++; else break; }
+
+      if (sl >= 10) {
+        // Exhaustion reversal — very strong signal
+        votes[oppVote] = (votes[oppVote]||0) + 3.0;
+        if (!trendName) { trendName = '🔥 Exhaustion Reversal'; trendDir = `${sl}× ${sColor} → flip`; }
+      } else if ([0,1,9].includes(lastNum)) {
+        // Breaker digit — strong reversal signal
+        votes[oppVote] = (votes[oppVote]||0) + 2.5;
+        if (!trendName) { trendName = `🚨 Breaker Digit (${lastNum})`; trendDir = `Digit ${lastNum} breaks ${sColor}`; }
+      } else if (sl <= 3) {
+        // Continuation bias — short streak, keep going
+        votes[curVote] = (votes[curVote]||0) + 2.0;
+        if (!trendName) { trendName = '➡️ Continuation Bias'; trendDir = `${sl}× ${sColor} — continue`; }
+      } else {
+        // Weighted fallback: streak 4-9, 65% same / 35% reverse
+        votes[curVote] = (votes[curVote]||0) + 1.3;  // 65% weight
+        votes[oppVote] = (votes[oppVote]||0) + 0.7;  // 35% weight
+      }
+    })();
+
+    // === FINAL DECISION ===
+    const finalPred = (votes['A'] || 0) >= (votes['B'] || 0) ? 'A' : 'B';
+    const totalV = (votes['A'] || 0) + (votes['B'] || 0);
+    const rawConf = totalV > 0 ? (votes[finalPred] || 0) / totalV : 0.55;
+    const finalConf = Math.min(0.94, Math.max(0.54, rawConf * 0.80 + 0.14));
+
+    // Determine pattern family + active type for display/alerts
+    let family = 'Alternation';
+    let activeType = 'NEUTRAL';
+    const activeResults = [prngR, moduloR, echoR, fractalR, hotCold, gapR, threshR, ladderR, pyramidR, snakeR, waveR, spiralR, parityR, trend].filter(Boolean);
+    const topResult = activeResults.find(r => r && r.confidence >= 0.70);
+    if (topResult?.family) family = topResult.family;
+    if (topResult?.type) activeType = topResult.type;
+    if (trend?.type && activeType === 'NEUTRAL') {
+      const t = trend.type;
+      activeType = t;
+      if (['EXTREME','LONG','SEVEN','SIX','FIVE','TRIPLE','DOUBLE','SINGLE','QUADRA_STREAK'].includes(t)) family = 'Streak';
+      else if (['TWO_IN_ONE','THREE_IN_ONE','QUADRA','EXPANSION'].includes(t)) family = 'Alternation';
+      else if (['MIRROR','CHAIN'].includes(t)) family = 'Reversal';
+      else if (['COMPRESSION','COMPRESSION_SWITCH'].includes(t)) family = 'Rhythm';
+    }
+    if (activeType === 'NEUTRAL' && streakLen > 0) {
+      activeType = streakLen >= 4 ? 'QUADRA_STREAK' : streakLen === 3 ? 'TRIPLE' : streakLen === 2 ? 'DOUBLE' : 'SINGLE';
+      if (streakLen >= 3) family = 'Streak';
+    }
+
+    const patternName = topPattern ? topPattern.name : 'Recency weighted';
+    return { pattern: patternName, next: finalPred, confidence: finalConf, trendName, trendDir, streakLen, family, activeType };
+  }
+
+  // =====================================================
+  // NUMBER PREDICTOR v2 — statistical gap + cold-bias + parity
+  // Does NOT echo frequent/recent numbers as prediction.
+  // Uses: gap analysis (overdue), cold-frequency (inverse),
+  //       parity trend continuation, and period-seeded tiebreak.
+  // =====================================================
+  function predictNumberMatchingResult(history, targetResult) {
+    const candidates = targetResult === 'BIG' ? [5,6,7,8,9] : [0,1,2,3,4];
+    if (history.length < 3) {
+      const seed = parseInt(String(history[0]?.period || Date.now()).slice(-4), 10);
+      return { number: candidates[seed % candidates.length], conf: 0.52 };
+    }
+
+    // 1. Gap analysis — rounds since each candidate last appeared
+    const gapOf = {};
+    for (const n of candidates) gapOf[n] = 999;
+    for (let i = 0; i < Math.min(history.length, 300); i++) {
+      const n = history[i].number;
+      if (candidates.includes(n) && gapOf[n] === 999) gapOf[n] = i + 1;
+    }
+    const maxGap = Math.max(...candidates.map(n => gapOf[n]));
+
+    // 2. Cold-frequency in last 60 rounds (inverse = less seen = more due)
+    const freq = {};
+    for (const n of candidates) freq[n] = 0;
+    for (const h of history.slice(0, Math.min(history.length, 60))) {
+      if (candidates.includes(h.number)) freq[h.number]++;
+    }
+    const maxFreq = Math.max(...candidates.map(n => freq[n])) || 1;
+
+    // 3. Parity trend — which parity is overdue in the last 12 rounds?
+    const parities = history.slice(0, 12).map(h => h.number % 2);
+    const evenRecent = parities.filter(p => p === 0).length;
+    const oddRecent  = parities.length - evenRecent;
+    const favorEven  = oddRecent > evenRecent; // more odd lately → even overdue
+
+    // 4. Number-level alternation: if this exact number appeared in last 1-2 rounds, penalize it
+    const recent2 = new Set(history.slice(0, 2).map(h => h.number));
+
+    // 5. Score each candidate (higher = more likely next)
+    const scores = {};
+    for (const n of candidates) {
+      const gapW    = maxGap > 0 ? gapOf[n] / maxGap : 0.5;          // 0-1, higher = more overdue
+      const coldW   = 1 - (freq[n] / maxFreq);                         // 0-1, higher = colder
+      const parityW = (n % 2 === 0) === favorEven ? 0.18 : 0;
+      const recPen  = recent2.has(n) ? 0.20 : 0;                       // penalty for just-appeared
+      scores[n] = gapW * 0.55 + coldW * 0.28 + parityW - recPen;
+    }
+
+    const maxScore = Math.max(...candidates.map(n => scores[n]));
+
+    // 6. Top-tier candidates within 12% of best score → deterministic tiebreak via period seed
+    const topTier = candidates.filter(n => scores[n] >= maxScore * 0.88);
+    const periodSeed = parseInt(String(history[0]?.period || '0').slice(-3), 10);
+    const best = topTier[periodSeed % topTier.length];
+
+    const conf = Math.min(0.84, 0.52 + maxScore * 0.40);
+    return { number: best, conf };
+  }
+  let lastFamily = 'Alternation';
+
+  // ── WingoPredictor: streak-based Markov predictor (ported from Python) ──────
+  // Builds a stats table: for each {streakLen}_{result} key, counts how often
+  // the next round continues (same) vs reverses (different).
+  function buildStreakStats(history) {
+    const stats = {};
+    const reversed = history.slice().reverse(); // oldest → newest
+    let streak = 1;
+    let prev = null;
+    for (let i = 0; i < reversed.length; i++) {
+      const result = reversed[i].result;
+      if (result === prev) { streak++; } else { streak = 1; }
+      prev = result;
+      const key = streak + '_' + result;
+      if (!stats[key]) stats[key] = { cont: 0, rev: 0 };
+      if (i + 1 < reversed.length) {
+        if (reversed[i + 1].result === result) { stats[key].cont++; } else { stats[key].rev++; }
+      }
+    }
+    return stats;
+  }
+
+  function wingoPredict(history) {
+    if (!history.length) return 'BIG';
+    const currentResult = history[0].result;
+    let streakLen = 1;
+    for (let i = 1; i < history.length; i++) {
+      if (history[i].result === currentResult) streakLen++; else break;
+    }
+    const stats = buildStreakStats(history);
+    const key = streakLen + '_' + currentResult;
+    if (!stats[key]) return currentResult;
+    const { cont, rev } = stats[key];
+    const total = cont + rev;
+    if (total === 0) return currentResult;
+    return (cont >= rev) ? currentResult : (currentResult === 'BIG' ? 'SMALL' : 'BIG');
+  }
+
+  function generateStablePrediction() {
+    if (liveHistory.length === 0) {
+      currentPrediction = 'BIG'; currentPredictedNumber = 7; lastPatternName = "Initializing"; lastConfidence = 0.52; lastTrendName = ''; lastTrendDir = ''; lastFamily = 'Alternation';
+      return;
+    }
+    const abSeq = convertToAB(liveHistory);
+    const patternResult = detectPattern(abSeq);
+    const predictedResult = wingoPredict(liveHistory);
+    const numPred = predictNumberMatchingResult(liveHistory, predictedResult);
+    const overallConf = Math.min(0.94, Math.max(0.54, (patternResult.confidence + numPred.conf) / 2));
+    currentPrediction = predictedResult;
+    currentPredictedNumber = numPred.number;
+    lastPatternName = patternResult.pattern;
+    lastConfidence = overallConf;
+    lastTrendName = patternResult.trendName;
+    lastTrendDir = patternResult.trendDir;
+    lastStreakLen = patternResult.streakLen || 0;
+    lastFamily = patternResult.family || 'Alternation';
+    lastPatternType = patternResult.activeType || '';
+    lastAlert = getPatternAlert(lastPatternType || 'NEUTRAL', {
+      streakLen: patternResult.streakLen || 0,
+      streakSide: liveHistory[0]?.result || '',
+      prediction: patternResult.next
+    });
+    lastMomentum = getMomentumBias(abSeq, patternResult.streakLen || 0);
+  }
+  // Cached BIG/SMALL counts — updated only when liveHistory actually changes
+  let _cachedBigCount = 0;
+  let _cachedSmallCount = 0;
+  let _cachedHistoryLen = -1;
+  function refreshStatCache() {
+    if (_cachedHistoryLen === liveHistory.length) return;
+    _cachedHistoryLen = liveHistory.length;
+    _cachedBigCount   = liveHistory.filter(r => r.result === 'BIG').length;
+    _cachedSmallCount = liveHistory.length - _cachedBigCount;
+  }
+  function updateUIWithCurrentPrediction() {
+    if (!currentPrediction) return;
+    refreshStatCache();
+    domSet('bigStat','innerText',_cachedBigCount);
+    domSet('smallStat','innerText',_cachedSmallCount);
+    const confPercent = Math.floor(lastConfidence * 100);
+    domSet('confStat','innerText',confPercent+'%');
+    const displayData = getNumberDisplayData(currentPredictedNumber);
+    let dotHtml = '';
+    if (displayData.dual) {
+      let classes = displayData.dotClass.split(' ');
+      dotHtml = `<div class="dual-dot-container">${classes.map(c => `<div class="dual-dot ${c}"></div>`).join('')}</div>`;
+    } else if (displayData.dotClass) {
+      dotHtml = `<div class="prediction-dot ${displayData.dotClass}"></div>`;
+    } else dotHtml = `<div style="width:70px; height:70px; border-radius:70px; background:#aaa;"></div>`;
+    const resultClass = (currentPrediction === 'BIG') ? 'big-result' : 'small-result';
+    document.getElementById('predictionArea').innerHTML = `
+      <div class="prediction-row">
+        ${dotHtml}
+        <div class="prediction-big-small ${resultClass}">${currentPrediction === 'BIG' ? 'BIG' : 'SMALL'}</div>
+        <div class="prediction-number ${displayData.textClass}">${currentPredictedNumber}</div>
+      </div>
+    `;
+    domSet('futurePeriodDisplay','innerText',getNextPeriod());
+    predGeneratedAt = Date.now();
+  }
+  function updateUIDefault() {
+    domSet('bigStat','innerText','0'); domSet('smallStat','innerText','0');
+    domSet('confStat','innerText','0%'); domStyle('confidenceFill','width','0%');
+    domSet('predictionArea','innerHTML','<div class="prediction-row">---</div>');
+    domSet('futurePeriodDisplay','innerText','----');
+  }
+  function onNewRoundData() {
+    if (liveHistory.length > 0 && currentPrediction) {
+      const latestRound = liveHistory[0];
+      if (!predictionHistory.find(p => p.period === latestRound.period)) {
+        addPredictionRecord({ period: latestRound.period, predictedResult: currentPrediction, predictedNumber: currentPredictedNumber, actualResult: latestRound.result, actualNumber: latestRound.number, correct: (currentPrediction === latestRound.result) });
+      }
+    }
+    // Blend with server prediction every round (server has full history, always current)
+    fetchServerPrediction();
+  }
+  // ── Browser-side bulk history loader ──
+  let bulkLoaded = false;
+
+  let _bulkFetchPromise = null;
+  async function fetchBulkHistory(force) {
+    if (bulkLoaded && !force) return _bulkFetchPromise;
+    if (_bulkFetchPromise && !force) return _bulkFetchPromise;
+    bulkLoaded = true;
+    _bulkFetchPromise = _doFetchBulk();
+    return _bulkFetchPromise;
+  }
+
+  async function _doFetchBulk() {
+    const tbody   = document.getElementById('liveTableBody');
+    const countEl = document.getElementById('liveTotalCount');
+
+    if (tbody && liveHistory.length < 20) {
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:28px 10px;color:#ffcc77;font-size:11px;font-weight:700;letter-spacing:0.5px;">⏳ Loading history...</td></tr>';
+    }
+
+    try {
+      const data  = await fetch('/api/wingo/history').then(r => r.json());
+      const items = data?.history || [];
+      const existingSet = new Set(liveHistory.map(h => h.period));
+      let added = 0;
+      for (const item of items) {
+        if (item.period && !existingSet.has(item.period)) {
+          liveHistory.push(item);
+          existingSet.add(item.period);
+          added++;
+        }
+      }
+      if (added > 0) {
+        liveHistory.sort((a, b) => String(b.period).localeCompare(String(a.period)));
+        // no cap — keep all rounds
+        saveLiveHistory();
+        renderLiveTable();
+        if (countEl) countEl.innerText = liveHistory.length;
+      }
+      generateStablePrediction();
+      updateUIWithCurrentPrediction();
+    } catch(e) {
+      console.warn('fetchBulkHistory error:', e);
+      if (tbody && liveHistory.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:28px;color:#ff6060;font-size:11px;">Failed to load — tap Refresh All</td></tr>';
+      }
+    }
+  }
+
+  let fetchInterval = null;
+  let lastRoundTimestamp = null;   // when we DETECTED the current period start
+  let roundDuration = 30000;       // 30 seconds per WinGo 30S round
+  let nextRoundTimer  = null;   // setTimeout handle for next round
+  let fastPollActive  = false;  // controls the non-blocking poll chain
+  let isFetching      = false;  // prevents concurrent in-flight fetches
+  let serverMidnightEst = null; // self-calibrating: estimated server day-boundary (ms)
+
+  // ── Self-calibrating server clock ──────────────────────────────────────────
+  // Called every time we detect a new result. Learns the server's round grid.
+  function calibrateServerClock(period, detectedAt) {
+    if (!period || String(period).length < 17) return;
+    const rNum = parseInt(String(period).slice(8), 10);
+    if (!rNum || isNaN(rNum)) return;
+    // Round N ended roughly 300ms before we detected it (network + publish lag)
+    const est = (detectedAt - 300) - rNum * 30000;
+    serverMidnightEst = serverMidnightEst === null
+      ? est
+      : serverMidnightEst * 0.85 + est * 0.15; // EMA — smoothes out variance
+  }
+
+  // ── Period-based: ms until we should start the early-poll window ───────────
+  // Fires 15 s before round end so we catch the result the moment it's published.
+  const EARLY_WINDOW_MS = 15000;
+  function msUntilNextFetch() {
+    if (serverMidnightEst !== null && liveHistory.length > 0) {
+      const period = String(liveHistory[0].period);
+      if (period.length >= 17) {
+        const rNum = parseInt(period.slice(8), 10);
+        if (rNum && !isNaN(rNum)) {
+          const nextRoundEnd = serverMidnightEst + (rNum + 1) * 30000;
+          return Math.max(200, nextRoundEnd - Date.now() - EARLY_WINDOW_MS);
+        }
+      }
+    }
+    if (!lastRoundTimestamp) return 25000;
+    return Math.max(200, lastRoundTimestamp + roundDuration - Date.now() - EARLY_WINDOW_MS);
+  }
+
+  // ── Early-result checker — hits the lightweight /api/wingo/early endpoint ──
+  // Returns true when a new period is detected so we can trigger a full fetch.
+  let isEarlyFetching = false;
+  async function checkEarlyResult() {
+    if (isEarlyFetching) return false;
+    isEarlyFetching = true;
+    try {
+      const res = await fetch('/api/wingo/early');
+      const data = await res.json();
+      if (!data.success || !data.latest) return false;
+      const latestPeriod = data.latest.period;
+      if (latestPeriod && liveHistory.length > 0 && latestPeriod !== liveHistory[0].period) {
+        return true; // new round detected early
+      }
+      if (latestPeriod && liveHistory.length === 0) return true;
+      return false;
+    } catch(e) { return false; }
+    finally { isEarlyFetching = false; }
+  }
+
+  // ── Non-blocking poll chain — polls early endpoint at 200ms, then full fetch ─
+  async function doFastPoll() {
+    if (!fastPollActive) return;
+    const newRound = await checkEarlyResult();
+    if (newRound) {
+      fastPollActive = false;
+      await fetchLiveData();
+    } else {
+      if (fastPollActive) setTimeout(doFastPoll, 50);
+    }
+  }
+
+  function scheduleNextRoundFetch() {
+    if (nextRoundTimer) { clearTimeout(nextRoundTimer); nextRoundTimer = null; }
+    fastPollActive = false;
+    const delay = msUntilNextFetch();
+    nextRoundTimer = setTimeout(() => {
+      nextRoundTimer = null;
+      fastPollActive = true;
+      doFastPoll();
+    }, delay);
+  }
+
+  async function fetchLiveData() {
+    if (isFetching) return;
+    isFetching = true;
+    try {
+      const res = await fetch('/api/wingo');
+      const data = await res.json();
+      if (!data.success || !Array.isArray(data.history)) return;
+
+      const existingSet = new Set(liveHistory.map(h => h.period));
+      let added = 0;
+      for (const item of data.history) {
+        if (!existingSet.has(item.period)) {
+          liveHistory.unshift(item);
+          existingSet.add(item.period);
+          added++;
+        }
+      }
+      if (added > 0) {
+        // Calibrate server clock BEFORE setting lastRoundTimestamp
+        calibrateServerClock(liveHistory[0]?.period, Date.now());
+        lastRoundTimestamp = Date.now();
+        fastPollActive = false; // stop the fast poll chain
+        liveHistory.sort((a, b) => String(b.period).localeCompare(String(a.period)));
+        if (liveHistory.length > 1000) {
+          const overflow = liveHistory.slice(1000); // oldest records beyond cap
+          liveHistory = liveHistory.slice(0, 1000);
+          try {
+            const existing = JSON.parse(localStorage.getItem('wingo_bg_v1') || '[]');
+            const bgSet = new Set(existing.map(r => r.period));
+            const toAdd = overflow.filter(r => !bgSet.has(r.period));
+            const merged = existing.concat(toAdd);
+            localStorage.setItem('wingo_bg_v1', JSON.stringify(merged));
+          } catch(e) {}
+        }
+        saveLiveHistory();
+        renderLiveTable();
+        // Defer prediction to timer=0 if round is still ticking
+        const _elapsed   = gameRemainAt ? Date.now() - gameRemainAt : Infinity;
+        const _remaining = (gameRemainMs !== null && gameRemainAt !== null) ? Math.max(0, gameRemainMs - _elapsed) : 0;
+        if (_remaining > 1500) {
+          // Log history outcome but defer prediction regeneration
+          if (currentPrediction && liveHistory.length > 0) {
+            const _lr = liveHistory[0];
+            if (!predictionHistory.find(p => p.period === _lr.period)) {
+              addPredictionRecord({ period: _lr.period, predictedResult: currentPrediction, predictedNumber: currentPredictedNumber, actualResult: _lr.result, actualNumber: _lr.number, correct: (currentPrediction === _lr.result) });
+            }
+          }
+          pendingPredictionRegen = true;
+        } else {
+          onNewRoundData();
+        }
+        scheduleNextRoundFetch();
+      }
+    } catch (e) {
+      console.warn('fetchLiveData error:', e);
+    } finally {
+      isFetching = false;
+    }
+  }
+
+  // ── Increment period string by 1 (handles zero-padded numeric suffixes) ──
+  function incrementPeriod(period) {
+    if (!period || period === '----') return '----';
+    const s = String(period);
+    // Format: 20260609NNNNNN  (date prefix + sequential number)
+    const match = s.match(/^(\d{8})(\d+)$/);
+    if (match) {
+      const prefix = match[1];
+      const numStr = match[2];
+      const next = (parseInt(numStr, 10) + 1).toString().padStart(numStr.length, '0');
+      return prefix + next;
+    }
+    // Generic: increment trailing digits
+    const m = s.match(/(.*?)(\d+)$/);
+    if (m) {
+      const next = (parseInt(m[2], 10) + 1).toString().padStart(m[2].length, '0');
+      return m[1] + next;
+    }
+    return s + '+1';
+  }
+
+
+  // ── Early-result engine: poll 200 ms from 6 s before round ends ──
+  let earlyPollActive  = false;
+  let earlyPollTimer   = null;
+  let earlyShownPeriod = null;   // period we already showed early result for
+
+  function startEarlyPoll() {
+    if (earlyPollActive) return;
+    earlyPollActive = true;
+    // Auto-stop after 35s (covers the entire result-publish window across round boundaries)
+    setTimeout(() => { earlyPollActive = false; }, 35000);
+    runEarlyPoll();
+  }
+
+  function stopEarlyPoll() {
+    earlyPollActive = false;
+    if (earlyPollTimer) { clearTimeout(earlyPollTimer); earlyPollTimer = null; }
+  }
+
+  async function runEarlyPoll() {
+    if (!earlyPollActive) return;
+    try {
+      const res  = await fetch('/api/wingo/early');
+      const data = await res.json();
+      if (data.success && data.latest) {
+        const item = data.latest;
+        const alreadyShown     = earlyShownPeriod === item.period;
+        const alreadyInHistory = liveHistory.find(h => h.period === item.period);
+        if (!alreadyShown && !alreadyInHistory) {
+          earlyPollActive  = false;
+          earlyShownPeriod = item.period;
+          showEarlyResult(item);
+          return;
+        }
+      }
+    } catch(e) {}
+    if (earlyPollActive) earlyPollTimer = setTimeout(runEarlyPoll, 30);
+  }
+
+  function pushOldestToBackground() {
+    if (liveHistory.length > 1000) {
+      const overflow = liveHistory.slice(1000);
+      liveHistory = liveHistory.slice(0, 1000);
+      try {
+        const existing = JSON.parse(localStorage.getItem('wingo_bg_v1') || '[]');
+        const bgSet = new Set(existing.map(r => r.period));
+        const toAdd = overflow.filter(r => !bgSet.has(r.period));
+        if (toAdd.length) localStorage.setItem('wingo_bg_v1', JSON.stringify(existing.concat(toAdd)));
+      } catch(e) {}
+    }
+  }
+  function showEarlyResult(item) {
+    liveHistory.unshift(item);
+    pushOldestToBackground();
+    saveLiveHistory();
+    renderLiveTable();
+
+    // ── Record prediction outcome in history immediately ──
+    if (currentPrediction) {
+      if (!predictionHistory.find(p => p.period === item.period)) {
+        addPredictionRecord({ period: item.period, predictedResult: currentPrediction, predictedNumber: currentPredictedNumber, actualResult: item.result, actualNumber: item.number, correct: (currentPrediction === item.result) });
+      }
+    }
+
+    // ── Sync prediction change with game timer ──
+    // If timer is still running (> 1.5s), defer the new prediction until it hits 0
+    const elapsed   = gameRemainAt ? Date.now() - gameRemainAt : Infinity;
+    const remaining = (gameRemainMs !== null && gameRemainAt !== null) ? Math.max(0, gameRemainMs - elapsed) : 0;
+    if (remaining > 1500) {
+      pendingPredictionRegen = true;   // renderTimer will fire this at displaySec=0
+      // Safety fallback: fire at most remaining+500ms later even if renderTimer misses 0
+      setTimeout(() => {
+        if (pendingPredictionRegen) {
+          pendingPredictionRegen = false;
+          generateStablePrediction();
+          updateUIWithCurrentPrediction();
+        }
+      }, remaining + 500);
+    } else {
+      generateStablePrediction();
+      updateUIWithCurrentPrediction();
+    }
+
+    fetchLiveData();  // background sync
+  }
+
+  // ── Real game-state timer (interpolated, floor-rounded to match game) ──
+  let gameRemainMs   = null;   // ms remaining as reported by server
+  let gameRemainAt   = null;   // Date.now() when that report arrived
+  let gameStatePeriod = null;  // current game period from server
+  let stateInterval  = null;   // server poll handle
+  let tickHandle     = null;   // display interval handle
+  let _lastDisplaySec = -1;    // dirty-check: only write to DOM when second changes
+  let _endFetchFired = false;  // one-shot guard: fetchGameState at round end
+
+  function renderTimer() {
+    if (!roundSyncActive) return;
+    const timerElem = document.getElementById('roundTimerDisplay');
+    if (!timerElem) return;
+    let displaySec = 0;
+    let remaining  = 0;
+    if (gameRemainMs !== null && gameRemainAt !== null) {
+      const elapsed = Date.now() - gameRemainAt;
+      remaining  = Math.max(0, gameRemainMs - elapsed);
+      displaySec = Math.floor(remaining / 1000);
+      if (remaining <= 1500 && !_endFetchFired) { _endFetchFired = true; fetchGameState(); }
+      if (remaining > 1500) _endFetchFired = false;
+      if (remaining <= 35000 && remaining > 0) startEarlyPoll();
+      // Adaptive state-poll speed: 200ms in last 35s, else 1000ms
+      const wantFast = remaining > 0 && remaining <= 35000;
+      if (wantFast && stateInterval && stateInterval._fastMode !== true) {
+        clearInterval(stateInterval);
+        stateInterval = setInterval(fetchGameState, 200);
+        stateInterval._fastMode = true;
+      } else if (!wantFast && stateInterval && stateInterval._fastMode === true) {
+        clearInterval(stateInterval);
+        stateInterval = setInterval(fetchGameState, 1000);
+        stateInterval._fastMode = false;
+      }
+    }
+
+    // ── Dirty-check: only touch the DOM when the displayed second changes ──
+    if (displaySec !== _lastDisplaySec) {
+      _lastDisplaySec = displaySec;
+      timerElem.innerText     = displaySec + 's';
+      timerElem.style.color   = displaySec <= 5 ? '#ff4444' : displaySec <= 10 ? '#ff8866' : '#ffcc88';
+      timerElem.style.opacity = displaySec <= 3 ? '0.7' : '1';
+    }
+
+    // ── Fire deferred prediction exactly when the round ends (timer = 0) ──
+    if (displaySec === 0 && pendingPredictionRegen) {
+      pendingPredictionRegen = false;
+      generateStablePrediction();
+      updateUIWithCurrentPrediction();
+    }
+
+    // Update "ready Xs ago" counter (only once per second)
+    if (predGeneratedAt > 0) {
+      const readySec = Math.floor((Date.now() - predGeneratedAt) / 1000);
+      domSet('predReadySec', 'innerText', readySec);
+    }
+  }
+
+  async function fetchGameState() {
+    try {
+      const res  = await fetch('/api/wingo/state');
+      const data = await res.json();
+      if (!data.success) return;
+
+      // Anchor remaining time to THIS browser clock moment
+      gameRemainMs = data.remainTime * 1000;
+      gameRemainAt = Date.now();
+
+      // Period display — update when period changes
+      const period = data.issueNumber;
+      if (period && period.length > 4 && period !== gameStatePeriod) {
+        gameStatePeriod = period;
+        domSet('futurePeriodDisplay', 'innerText', period);
+        fetchLiveData();  // sync full list on new period
+        // New round just started — immediately poll for the previous round result
+        // (result is published 1-5s into the new round, before game animation finishes)
+        earlyPollActive = false;  // reset so startEarlyPoll can re-arm
+        startEarlyPoll();
+      }
+
+      // ── EARLY RESULT CHECK — runs on EVERY state poll, not just on period change ──
+      // earlyCache.latest is the most recent completed round from the history API.
+      // It appears 2-3s into the new round while the game UI is still animating.
+      if (data.previous && data.previous.period) {
+        const prev = data.previous;
+        const alreadyShown     = earlyShownPeriod === prev.period;
+        const alreadyInHistory = liveHistory.find(h => h.period === prev.period);
+        if (!alreadyShown && !alreadyInHistory) {
+          earlyShownPeriod = prev.period;   // mark before async ops to prevent double-fire
+          // NOTE: do NOT stop earlyPollActive here — let runEarlyPoll keep hunting
+          showEarlyResult(prev);
+        }
+      }
+    } catch(e) {}
+  }
+
+  function startTimerLoop() {
+    if (tickHandle)     clearInterval(tickHandle);
+    if (stateInterval)  clearInterval(stateInterval);
+    fetchGameState();
+    stateInterval = setInterval(fetchGameState, 1000);
+    tickHandle    = setInterval(renderTimer, 200);   // 200ms refresh — smooth + half the DOM churn
+  }
+
+
+
+
+
+  async function startAutoSync() {
+    if (roundSyncActive) return;
+    roundSyncActive = true;
+
+    // 1. Start countdown timer immediately — user sees it right away
+    startTimerLoop();
+
+    // 2. Fetch live data FIRST — predictions appear as soon as this resolves
+    await fetchLiveData();
+
+    // 3. Force UI render with whatever data we have (cached or freshly fetched)
+    if (liveHistory.length > 0) { generateStablePrediction(); updateUIWithCurrentPrediction(); }
+
+    // 4. Bulk-fetch all 500 rounds — awaited so Live Data tab fills immediately
+    await fetchBulkHistory();
+
+    // 4. Safety-net: poll every 5s if no active round timer
+    if (fetchInterval) clearInterval(fetchInterval);
+    fetchInterval = setInterval(() => {
+      if (!nextRoundTimer && !fastPollActive && !earlyPollActive) fetchLiveData();
+    }, 5000);
+
+    // 5. Full refresh every 5 minutes to stay in sync with all 500 rounds
+    setInterval(() => { bulkLoaded = false; fetchBulkHistory(true); }, 5 * 60 * 1000);
+  }
+  function setupTabs() {
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabId = tab.dataset.tab;
+        if (!tabId) return;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        document.getElementById(`${tabId}Tab`).classList.add('active');
+      });
+    });
+  }
+  // ── Shared activation: shows main panel, starts heartbeat, redirects game iframe ──
+  let _heartbeatTimer = null;
+  let _balanceTimer = null;
+  let _sessionExpireTimer = null;
+  let _iframeWatchReady = false;
+
+  // ── Force widget back to login (session expired or kicked out) ────────────────
+  function doWidgetLogout(reason) {
+    // Clear timers
+    if (_sessionExpireTimer) { clearTimeout(_sessionExpireTimer); _sessionExpireTimer = null; }
+    if (_heartbeatTimer) { clearInterval(_heartbeatTimer); _heartbeatTimer = null; }
+    if (_balanceTimer) { clearInterval(_balanceTimer); _balanceTimer = null; }
+    _iframeWatchReady = false;
+
+    // Clear persisted session
+    try { localStorage.removeItem('wingo_session_v1'); } catch(e) {}
+
+    // Reset iframe to landing page (clears game session cookie on next login)
+    const gameIframe = document.getElementById('gameIframe');
+    if (gameIframe) gameIframe.src = 'https://hgnice.club/#/register?invitationCode=513331567606';
+
+    // Show login panel
+    document.getElementById('mainPanel').style.display = 'none';
+    document.getElementById('loginPanel').style.display = 'flex';
+
+    // Show reason (yellow = warning, not red error)
+    if (reason) {
+      let el = document.getElementById('authError');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'authError';
+        el.style.cssText = 'font-size:11px;color:#ff6060;text-align:center;margin-top:4px;font-weight:600;letter-spacing:0.3px;';
+        const loginArea = document.querySelector('.login-area');
+        const unlockBtn = document.getElementById('unlockBtn');
+        if (loginArea && unlockBtn) loginArea.insertBefore(el, unlockBtn);
+      }
+      el.style.color = '#ffb347';
+      el.textContent = reason;
+      setTimeout(() => { if (el) { el.textContent = ''; el.style.color = '#ff6060'; } }, 5000);
+    }
+  }
+  // ── Fetch server-side prediction (always current — server polls 24/7) ──────────
+  function fetchServerPrediction() {
+    fetch('/api/wingo/predict')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        // Seed client-side state with server result
+        currentPrediction = d.prediction;
+        lastConfidence = (d.confidence || 60) / 100;
+        // Capture active PRNG trend family name from server
+        currentTrendFamily = d.trendFamily || null;
+        // Use frequency-based number from server (top-3 most common digit for predicted side)
+        if (d.predictedNumber !== undefined && d.predictedNumber !== null) {
+          currentPredictedNumber = d.predictedNumber;
+        } else if (currentPredictedNumber === null || (currentPrediction === 'BIG' && currentPredictedNumber < 5) || (currentPrediction === 'SMALL' && currentPredictedNumber >= 5)) {
+          currentPredictedNumber = currentPrediction === 'BIG' ? 7 : 2;
+        }
+        updateUIWithCurrentPrediction();
+      })
+      .catch(() => {});
+  }
+
+  function _activateMainPanel(phone, skipServerHistory, expiresIn) {
+    document.getElementById('loginPanel').style.display = 'none';
+    document.getElementById('mainPanel').style.display = 'block';
+    startAutoSync();
+    setupTabs();
+    // Immediately show the server prediction (reflects all rounds since last visit)
+    fetchServerPrediction();
+    // Only restore server prediction history for returning users.
+    // New users (first login or different account) start with a clean history tab.
+    // Only load server history if this user already has local predictions.
+    // An empty predictionHistory means they are genuinely new — skip server load
+    // so no global prediction data leaks into their clean history tab.
+    if (!skipServerHistory && predictionHistory.length > 0) loadPredHistoryFromServer();
+
+    if (phone) {
+      window._wingoPhone = phone;
+
+      // ── Balance: fetch immediately, retry once at 3 s (handles JWT-not-ready edge case),
+      //    then poll every 30 s. Always store the interval so logout can clear it. ──
+      if (_balanceTimer) { clearInterval(_balanceTimer); _balanceTimer = null; }
+      fetchBalance(phone);
+      // Retry once after 3 s for new registrations where token may need a moment
+      setTimeout(() => fetchBalance(phone), 3000);
+      _balanceTimer = setInterval(() => fetchBalance(phone), 30000);
+
+      function _heartbeat() {
+        fetch('/api/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone })
+        }).then(r => r.json()).then(d => {
+          if (d && d.ok === false) doWidgetLogout('⏱ Session expired — please log in again');
+        }).catch(() => {});
+      }
+      _heartbeat();
+      if (!_heartbeatTimer) {
+        _heartbeatTimer = setInterval(_heartbeat, 60000);
+        document.addEventListener('visibilitychange', function() {
+          if (document.visibilityState === 'visible') _heartbeat();
+        });
+      }
+
+      // ── JWT expiry timer — auto-logout when HGNice token expires ──────────────
+      if (_sessionExpireTimer) clearTimeout(_sessionExpireTimer);
+      if (expiresIn) {
+        const msLeft = (expiresIn * 1000) - Date.now();
+        if (msLeft > 0) {
+          _sessionExpireTimer = setTimeout(() => {
+            doWidgetLogout('⏱ Session expired — please log in again');
+          }, msLeft);
+        }
+      }
+
+      // ── iframe navigation watcher — fires when game redirects to login page ───
+      // After the first load we mark the iframe as ready. Any subsequent load event
+      // (which means a full-page navigation inside the game) = session was kicked.
+      const gameIframe = document.getElementById('gameIframe');
+      if (gameIframe) {
+        _iframeWatchReady = false;
+        const _onIframeLoad = function() {
+          if (!_iframeWatchReady) {
+            // First load is the normal startup — just mark ready
+            _iframeWatchReady = true;
+            return;
+          }
+          // Subsequent full-page navigation = game session expired / kicked to login
+          // Small delay so the page has time to fully redirect before we react
+          setTimeout(() => {
+            if (_iframeWatchReady) doWidgetLogout('⏱ Session expired — please log in again');
+          }, 1500);
+        };
+        gameIframe.removeEventListener('load', gameIframe._sessionWatcher);
+        gameIframe._sessionWatcher = _onIframeLoad;
+        gameIframe.addEventListener('load', _onIframeLoad);
+
+        // Only reload if iframe isn't already on the register/home route
+        const currentSrc = gameIframe.src || '';
+        if (!currentSrc.includes('hgnice.club') || currentSrc.includes('#/login')) {
+          gameIframe.src = 'https://hgnice.club/#/register?invitationCode=513331567606';
+        }
+      }
+    }
+  }
+
+  // ── Auto-restore session for returning users (stay Active without re-logging in) ──
+  (function _tryRestoreSession() {
+    try {
+      const raw = localStorage.getItem('wingo_session_v1');
+      if (!raw) return;
+      const sess = JSON.parse(raw);
+      if (!sess || !sess.phone) return;
+      // Sessions expire after 7 days
+      if (Date.now() - (sess.savedAt || 0) > 7 * 24 * 60 * 60 * 1000) {
+        localStorage.removeItem('wingo_session_v1');
+        return;
+      }
+      // If we know the token expiry and it's already passed, don't bother restoring
+      if (sess.expiresIn && (sess.expiresIn * 1000) < Date.now()) {
+        localStorage.removeItem('wingo_session_v1');
+        return;
+      }
+      // Ping server to verify session is still valid before restoring
+      fetch('/api/heartbeat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: sess.phone })
+      }).then(r => r.json()).then(d => {
+        if (d.ok) {
+          _activateMainPanel(sess.phone, false, sess.expiresIn || null);
+        } else {
+          localStorage.removeItem('wingo_session_v1');
+        }
+      }).catch(() => {});
+    } catch(e) {}
+  })();
+
+  async function doUnlock() {
+    const username = (document.getElementById('loginUsername').value || '').trim();
+    const password = (document.getElementById('loginPassword').value || '').trim();
+    if (!username || !password) { shakeWidget(); return; }
+
+    const btn = document.getElementById('unlockBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Verifying...';
+
+    // Pre-fetch 500 rounds in parallel with auth — data loads while credentials verify
+    fetchBulkHistory();
+
+    try {
+      const res = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (data.success) {
+        // Detect if this is a new user or a different account on this device
+        let isNewUser = true;
+        try {
+          const prevSess = JSON.parse(localStorage.getItem('wingo_session_v1') || 'null');
+          if (prevSess && prevSess.phone === data.phone) isNewUser = false;
+        } catch(e) {}
+
+        // New user or different account — wipe local pred history so they start clean
+        if (isNewUser) {
+          try {
+            localStorage.removeItem('wingo_pred_history_v5');
+            predictionHistory = [];
+            renderHistoryTable();
+          } catch(e) {}
+        }
+
+        // Persist session so returning users auto-restore on next page load
+        const expiresIn = data.data?.expiresIn || null;
+        if (data.phone) {
+          try {
+            localStorage.setItem('wingo_session_v1', JSON.stringify({
+              phone: data.phone,
+              savedAt: Date.now(),
+              expiresIn: expiresIn
+            }));
+          } catch(e) {}
+        }
+        _activateMainPanel(data.phone, isNewUser, expiresIn);
+      } else {
+        shakeWidget();
+        showAuthError(data.msg || 'Invalid credentials');
+        btn.disabled = false;
+        btn.textContent = '🔒 UNLOCK';
+      }
+    } catch (e) {
+      shakeWidget();
+      showAuthError('Connection error — try again');
+      btn.disabled = false;
+      btn.textContent = '🔒 UNLOCK';
+    }
+  }
+
+  function shakeWidget() {
+    const w = document.getElementById('widget');
+    w.style.transition = 'transform 0.07s ease';
+    const moves = [6, -6, 5, -5, 3, -3, 0];
+    let i = 0;
+    const step = () => { w.style.transform = (w._tx ? `translate3d(${w._tx}px,${w._ty||0}px,0) ` : '') + `translateX(${moves[i]}px)`; if (++i < moves.length) setTimeout(step, 70); else w.style.transform = w._tx ? `translate3d(${w._tx}px,${w._ty||0}px,0)` : ''; };
+    step();
+  }
+
+  async function fetchBalance(phone) {
+    try {
+      const r = await fetch('/api/balance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone })
+      });
+      const d = await r.json();
+      const el = document.getElementById('balanceDisplay');
+      if (!el) return;
+      el.style.display = 'inline-block';
+      if (d.success && d.balance !== null && d.balance !== undefined) {
+        el.textContent = '💰 ৳' + Number(d.balance).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        el.style.color = '#60e080';
+        el.style.borderColor = 'rgba(96,224,128,0.3)';
+      } else if (d.raw) {
+        console.log('[balance raw]', JSON.stringify(d.raw).slice(0, 300));
+        // Try to find any numeric-looking field as fallback
+        const vals = Object.entries(d.raw).filter(([k,v]) => typeof v === 'number' && v >= 0);
+        if (vals.length) {
+          el.textContent = '💰 ৳' + Number(vals[0][1]).toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } else { el.textContent = '💰 --'; }
+      } else {
+        el.style.display = 'none';
+      }
+    } catch (e) { /* silent */ }
+  }
+
+  function showAuthError(msg) {
+    let el = document.getElementById('authError');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'authError';
+      el.style.cssText = 'font-size:11px;color:#ff6060;text-align:center;margin-top:4px;font-weight:600;letter-spacing:0.3px;';
+      document.querySelector('.login-area').insertBefore(el, document.getElementById('unlockBtn'));
+    }
+    el.textContent = msg;
+    setTimeout(() => { if (el) el.textContent = ''; }, 3500);
+  }
+
+  document.getElementById('unlockBtn').addEventListener('click', doUnlock);
+  document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('loginPanel').style.display !== 'none') doUnlock(); });
+  const eyeToggle = document.getElementById('eyeToggle');
+  if (eyeToggle) {
+    eyeToggle.addEventListener('click', () => {
+      const pw = document.getElementById('loginPassword');
+      const isHidden = pw.type === 'password';
+      pw.type = isHidden ? 'text' : 'password';
+      eyeToggle.textContent = isHidden ? '👁' : '👁';
+    });
+  }
+  document.getElementById('minimizeBtn').addEventListener('click', () => {
+    const c = document.getElementById('content');
+    const btn = document.getElementById('minimizeBtn');
+    const isHidden = c.style.display === 'none';
+    c.style.display = isHidden ? 'block' : 'none';
+    btn.textContent = isHidden ? '−' : '+';
+  });
+  document.getElementById('refreshAllBtn').addEventListener('click', function() {
+    this.textContent = '⏳ Loading…';
+    this.disabled = true;
+    bulkLoaded = false;
+    fetchBulkHistory(true).then(() => {
+      this.textContent = '↺ Refresh All';
+      this.disabled = false;
+    });
+  });
+  document.getElementById('refreshAllBtn').addEventListener('mouseenter', function() {
+    if (!this.disabled) { this.style.background = 'rgba(255,150,80,0.22)'; this.style.color = 'rgba(255,220,160,0.95)'; }
+  });
+  document.getElementById('refreshAllBtn').addEventListener('mouseleave', function() {
+    if (!this.disabled) { this.style.background = 'rgba(255,150,80,0.10)'; this.style.color = 'rgba(255,200,140,0.75)'; }
+  });
+
+  document.getElementById('exportPdfBtn').addEventListener('click', function() {
+    if (!liveHistory.length) { alert('No live data to export yet.'); return; }
+    const btn = this;
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+    setTimeout(() => {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const marginL = 12, marginR = 12, marginT = 18, marginB = 14;
+        const usableW = pageW - marginL - marginR;
+        const colWidths = [usableW * 0.44, usableW * 0.14, usableW * 0.22, usableW * 0.20];
+        const rowH = 7;
+        const headerH = 9;
+        let y = marginT;
+
+        function drawPageHeader() {
+          doc.setFillColor(20, 12, 5);
+          doc.rect(0, 0, pageW, 14, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(255, 170, 50);
+          doc.text('WINGO · LIVE DATA HISTORY', pageW / 2, 9, { align: 'center' });
+          doc.setFontSize(7);
+          doc.setTextColor(180, 130, 80);
+          const now = new Date().toLocaleString();
+          doc.text('Exported: ' + now + '   |   Total Rounds: ' + liveHistory.length, pageW / 2, 13.5, { align: 'center' });
+          y = marginT + 4;
+        }
+
+        function drawTableHeader() {
+          doc.setFillColor(35, 22, 8);
+          doc.rect(marginL, y, usableW, headerH, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(255, 190, 80);
+          const headers = ['PERIOD', 'NUMBER', 'RESULT', 'PATTERN'];
+          let x = marginL + 2;
+          headers.forEach((h, i) => {
+            doc.text(h, x + (i === 0 ? 0 : colWidths[i] / 2), y + 6, { align: i === 0 ? 'left' : 'center' });
+            x += colWidths[i];
+          });
+          y += headerH;
+        }
+
+        drawPageHeader();
+        drawTableHeader();
+
+        liveHistory.forEach((row, idx) => {
+          if (y + rowH > pageH - marginB) {
+            doc.addPage();
+            drawPageHeader();
+            drawTableHeader();
+          }
+          const isEven = idx % 2 === 0;
+          doc.setFillColor(isEven ? 16 : 22, isEven ? 10 : 14, isEven ? 4 : 6);
+          doc.rect(marginL, y, usableW, rowH, 'F');
+
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+
+          const isBig = row.result === 'BIG';
+          let x = marginL + 2;
+
+          doc.setTextColor(200, 180, 140);
+          doc.text(String(row.period), x, y + 5, { align: 'left' });
+          x += colWidths[0];
+
+          doc.setTextColor(240, 220, 100);
+          doc.text(String(row.number), x + colWidths[1] / 2, y + 5, { align: 'center' });
+          x += colWidths[1];
+
+          if (isBig) { doc.setTextColor(255, 80, 100); } else { doc.setTextColor(80, 180, 255); }
+          doc.setFont('helvetica', 'bold');
+          doc.text(row.result, x + colWidths[2] / 2, y + 5, { align: 'center' });
+          x += colWidths[2];
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(160, 140, 100);
+          const dots = Array.from({length: row.number}, () => isBig ? '●' : '○').join('');
+          doc.text(dots.length > 8 ? dots.slice(0,8)+'…' : dots, x + colWidths[3] / 2, y + 5, { align: 'center' });
+
+          y += rowH;
+        });
+
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let p = 1; p <= totalPages; p++) {
+          doc.setPage(p);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(120, 100, 70);
+          doc.text('Page ' + p + ' / ' + totalPages, pageW / 2, pageH - 4, { align: 'center' });
+        }
+
+        const dateStr = new Date().toISOString().slice(0,10);
+        doc.save('wingo-history-' + dateStr + '.pdf');
+      } catch(e) {
+        alert('PDF generation failed: ' + e.message);
+      }
+      btn.textContent = '📄 PDF';
+      btn.disabled = false;
+    }, 50);
+  });
+  document.getElementById('exportPdfBtn').addEventListener('mouseenter', function() {
+    if (!this.disabled) { this.style.background = 'rgba(100,200,120,0.22)'; this.style.color = 'rgba(160,255,180,0.98)'; }
+  });
+  document.getElementById('exportPdfBtn').addEventListener('mouseleave', function() {
+    if (!this.disabled) { this.style.background = 'rgba(100,200,120,0.10)'; this.style.color = 'rgba(140,230,160,0.85)'; }
+  });
+
+  document.getElementById('exportHistoryPdfBtn').addEventListener('click', function() {
+    if (!predictionHistory.length) { alert('No prediction history to export yet.'); return; }
+    const btn = this;
+    btn.textContent = '⏳ Generating…';
+    btn.disabled = true;
+    setTimeout(() => {
+      try {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageW = doc.internal.pageSize.getWidth();
+        const pageH = doc.internal.pageSize.getHeight();
+        const marginL = 12, marginR = 12, marginT = 18, marginB = 14;
+        const usableW = pageW - marginL - marginR;
+        const colWidths = [usableW * 0.44, usableW * 0.20, usableW * 0.18, usableW * 0.18];
+        const rowH = 7;
+        const headerH = 9;
+        let y = marginT;
+
+        const correct = predictionHistory.filter(p => p.correct).length;
+        const total   = predictionHistory.length;
+        const acc     = total ? Math.round((correct / total) * 100) : 0;
+
+        function drawPageHeader() {
+          doc.setFillColor(20, 12, 5);
+          doc.rect(0, 0, pageW, 14, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(255, 170, 50);
+          doc.text('WINGO · PREDICTION HISTORY', pageW / 2, 9, { align: 'center' });
+          doc.setFontSize(7);
+          doc.setTextColor(180, 130, 80);
+          const now = new Date().toLocaleString();
+          doc.text('Exported: ' + now + '   |   Total: ' + total + '   ✅ Correct: ' + correct + '   Accuracy: ' + acc + '%', pageW / 2, 13.5, { align: 'center' });
+          y = marginT + 4;
+        }
+
+        function drawTableHeader() {
+          doc.setFillColor(35, 22, 8);
+          doc.rect(marginL, y, usableW, headerH, 'F');
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(8);
+          doc.setTextColor(255, 190, 80);
+          const headers = ['PERIOD', 'PREDICTED', 'NUMBER', 'MATCH'];
+          let x = marginL + 2;
+          headers.forEach((h, i) => {
+            doc.text(h, x + (i === 0 ? 0 : colWidths[i] / 2), y + 6, { align: i === 0 ? 'left' : 'center' });
+            x += colWidths[i];
+          });
+          y += headerH;
+        }
+
+        drawPageHeader();
+        drawTableHeader();
+
+        predictionHistory.forEach((row, idx) => {
+          if (y + rowH > pageH - marginB) {
+            doc.addPage();
+            drawPageHeader();
+            drawTableHeader();
+          }
+          const isEven = idx % 2 === 0;
+          doc.setFillColor(isEven ? 16 : 22, isEven ? 10 : 14, isEven ? 4 : 6);
+          doc.rect(marginL, y, usableW, rowH, 'F');
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7.5);
+          let x = marginL + 2;
+
+          doc.setTextColor(200, 180, 140);
+          doc.text(String(row.period), x, y + 5, { align: 'left' });
+          x += colWidths[0];
+
+          const isBig = row.predictedResult === 'BIG';
+          if (isBig) { doc.setTextColor(255, 80, 100); } else { doc.setTextColor(80, 180, 255); }
+          doc.setFont('helvetica', 'bold');
+          doc.text(row.predictedResult || '---', x + colWidths[1] / 2, y + 5, { align: 'center' });
+          x += colWidths[1];
+
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(240, 220, 100);
+          doc.text(row.actualNumber !== undefined ? String(row.actualNumber) : '---', x + colWidths[2] / 2, y + 5, { align: 'center' });
+          x += colWidths[2];
+
+          if (row.correct) { doc.setTextColor(80, 220, 120); } else { doc.setTextColor(255, 80, 80); }
+          doc.setFont('helvetica', 'bold');
+          doc.text(row.correct ? '✓ YES' : '✗ NO', x + colWidths[3] / 2, y + 5, { align: 'center' });
+
+          y += rowH;
+        });
+
+        const totalPages = doc.internal.getNumberOfPages();
+        for (let p = 1; p <= totalPages; p++) {
+          doc.setPage(p);
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(7);
+          doc.setTextColor(120, 100, 70);
+          doc.text('Page ' + p + ' / ' + totalPages, pageW / 2, pageH - 4, { align: 'center' });
+        }
+
+        const dateStr = new Date().toISOString().slice(0, 10);
+        doc.save('wingo-prediction-history-' + dateStr + '.pdf');
+      } catch(e) {
+        alert('PDF generation failed: ' + e.message);
+      }
+      btn.textContent = '📄 PDF';
+      btn.disabled = false;
+    }, 50);
+  });
+  document.getElementById('exportHistoryPdfBtn').addEventListener('mouseenter', function() {
+    if (!this.disabled) { this.style.background = 'rgba(100,200,120,0.22)'; this.style.color = 'rgba(160,255,180,0.98)'; }
+  });
+  document.getElementById('exportHistoryPdfBtn').addEventListener('mouseleave', function() {
+    if (!this.disabled) { this.style.background = 'rgba(100,200,120,0.10)'; this.style.color = 'rgba(140,230,160,0.85)'; }
+  });
+
+  document.getElementById('resetHistoryBtn').addEventListener('click', () => {
+    predictionHistory = [];
+    localStorage.removeItem('wingo_pred_history_v5');
+    renderHistoryTable();
+    updateHistoryStats();
+  });
+  document.getElementById('resetHistoryBtn').addEventListener('mouseenter', function() {
+    this.style.background = 'rgba(255,80,80,0.13)';
+    this.style.color = 'rgba(255,160,140,0.85)';
+    this.style.borderColor = 'rgba(255,100,80,0.35)';
+  });
+  document.getElementById('resetHistoryBtn').addEventListener('mouseleave', function() {
+    this.style.background = 'rgba(255,255,255,0.06)';
+    this.style.color = 'rgba(255,200,160,0.55)';
+    this.style.borderColor = 'rgba(255,180,120,0.18)';
+  });
+  loadLiveHistory();
+})();
+</script>
+</body>
+</html>
