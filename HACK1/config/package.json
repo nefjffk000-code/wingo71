@@ -4,7 +4,7 @@
   "description": "WINGO Pattern Predictor with Webshare Proxy",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node src/server.js"
   },
   "dependencies": {
     "@replit/database": "^3.0.1",
