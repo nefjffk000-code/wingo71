@@ -1447,6 +1447,12 @@ app.use(express.static(__dirname, {
   }
 }));
 
+app.use(express.static("public"));
+
+app.get("/", (req, res) => {
+  res.sendFile("index.html", { root: "public" });
+});
+
 app.get(/.*/, (req, res) => {
   res.sendFile(`${__dirname}/index.html`);
 });
@@ -1454,3 +1460,5 @@ app.get(/.*/, (req, res) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on http://0.0.0.0:${PORT}`);
 });
+
+export default app;
